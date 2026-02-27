@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "nombre": "Juan Pérez",
+    "posicion": "Delantero",
+    "años": 25,
+    "partidos": 15,
+    "victorias": 10,
+    "goles": 12,
+    "descripcion": "Delantero rápido y técnico, especialista en definición."
+  },
+  {
+    "id": 2,
+    "nombre": "Carlos Rodríguez",
+    "posicion": "Mediocampista",
+    "años": 28,
+    "partidos": 18,
+    "victorias": 12,
+    "goles": 5,
+    "descripcion": "Mediocampista creativo con gran visión de juego."
+  },
+  {
+    "id": 3,
+    "nombre": "Luis Martínez",
+    "posicion": "Defensor",
+    "años": 30,
+    "partidos": 20,
+    "victorias": 14,
+    "goles": 2,
+    "descripcion": "Defensor sólido y experimentado, líder en la zaga."
+  }
+]

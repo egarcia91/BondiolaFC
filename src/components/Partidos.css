@@ -1,0 +1,194 @@
+.partidos-container {
+  width: 100%;
+}
+
+.partidos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.partido-card {
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: var(--shadow);
+  transition: all 0.3s ease;
+  border: 1px solid var(--border-color);
+}
+
+.partido-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.partido-card.futuro {
+  border-left: 4px solid var(--secondary-color);
+  background: linear-gradient(to right, rgba(59, 130, 246, 0.05), var(--card-bg));
+}
+
+.partido-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--border-color);
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.partido-fecha {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.fecha-texto {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: capitalize;
+}
+
+.hora-texto {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.partido-lugar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.lugar-icon {
+  font-size: 1.1rem;
+}
+
+.badge-futuro {
+  background-color: var(--secondary-color);
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.partido-resultado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background-color: var(--bg-color);
+  border-radius: 8px;
+  gap: 1rem;
+}
+
+.equipo-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.equipo-nombre {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.equipo-goles {
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--primary-color);
+}
+
+.vs-separator {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 0 1rem;
+}
+
+.badge-ganador {
+  font-size: 1.2rem;
+}
+
+.resultado-empate {
+  text-align: center;
+  padding: 0.75rem;
+  background-color: var(--warning-color);
+  color: white;
+  border-radius: 8px;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.partido-jugadores {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.jugadores-equipo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.jugadores-titulo {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.jugadores-lista {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.jugadores-lista li {
+  padding: 0.5rem;
+  background-color: var(--bg-color);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .partido-card {
+    padding: 1.5rem;
+  }
+
+  .partido-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .partido-resultado {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .vs-separator {
+    padding: 0.5rem 0;
+  }
+
+  .partido-jugadores {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
