@@ -60,7 +60,7 @@ function Partidos() {
                 <div className="partido-resultado">
                   <div className="equipo-info">
                     <div className="equipo-nombre equipo-local">
-                      {partido.equipoLocal.nombre}
+                      Rojo
                       {!esFuturo && !esEmpate && partido.ganador === partido.equipoLocal.nombre && (
                         <span className="badge-ganador">🏆</span>
                       )}
@@ -72,7 +72,7 @@ function Partidos() {
 
                   <div className="equipo-info">
                     <div className="equipo-nombre equipo-visitante">
-                      {partido.equipoVisitante.nombre}
+                      Azul
                       {!esFuturo && !esEmpate && partido.ganador === partido.equipoVisitante.nombre && (
                         <span className="badge-ganador">🏆</span>
                       )}
@@ -87,7 +87,7 @@ function Partidos() {
 
                 <div className="partido-jugadores">
                   <div className="jugadores-equipo">
-                    <h4 className="jugadores-titulo">{partido.equipoLocal.nombre}</h4>
+                    <h4 className="jugadores-titulo">Rojo</h4>
                     <ul className="jugadores-lista">
                       {partido.equipoLocal.jugadores.map((jugador, idx) => (
                         <li key={idx}>{jugador}</li>
@@ -95,7 +95,7 @@ function Partidos() {
                     </ul>
                   </div>
                   <div className="jugadores-equipo">
-                    <h4 className="jugadores-titulo">{partido.equipoVisitante.nombre}</h4>
+                    <h4 className="jugadores-titulo">Azul</h4>
                     <ul className="jugadores-lista">
                       {partido.equipoVisitante.jugadores.map((jugador, idx) => (
                         <li key={idx}>{jugador}</li>

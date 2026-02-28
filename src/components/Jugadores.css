@@ -4,9 +4,73 @@
 
 .section-title {
   font-size: 2rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   color: var(--text-primary);
   font-weight: 700;
+}
+
+.jugadores-controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding: 1.25rem;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+}
+
+.jugadores-filtro,
+.jugadores-orden {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.controles-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.controles-select {
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
+  font-size: 0.95rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  cursor: pointer;
+  min-width: 160px;
+}
+
+.controles-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.controles-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.controles-btn:hover {
+  background-color: var(--border-color);
+}
+
+.controles-btn.active {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
 }
 
 .empty-state {
@@ -45,10 +109,23 @@
   border-bottom: 2px solid var(--border-color);
 }
 
-.jugador-nombre {
+.jugador-titulo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.jugador-apodo {
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.jugador-nombre {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--text-secondary);
 }
 
 .jugador-posicion {
@@ -105,6 +182,22 @@
 }
 
 @media (max-width: 768px) {
+  .jugadores-controles {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .jugadores-filtro,
+  .jugadores-orden {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .controles-select {
+    width: 100%;
+    min-width: 0;
+  }
+
   .jugadores-grid {
     grid-template-columns: 1fr;
   }

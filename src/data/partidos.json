@@ -1,35 +1,18 @@
 [
   {
     "id": 1,
-    "fecha": "2024-01-15",
-    "hora": "18:00",
-    "lugar": "Cancha Municipal",
+    "fecha": "2026-02-26",
+    "hora": "21:00",
+    "lugar": "Por definir",
     "equipoLocal": {
       "nombre": "Bondiola FC",
-      "jugadores": ["Juan Pérez", "Carlos Rodríguez", "Luis Martínez"],
-      "goles": 3
+      "jugadores": ["Chino", "Cris", "invitado", "Nico", "Joa", "Eze"],
+      "goles": 0
     },
     "equipoVisitante": {
-      "nombre": "Rival FC",
-      "jugadores": ["Pedro García", "Miguel López", "Andrés Sánchez"],
-      "goles": 1
-    },
-    "ganador": "Bondiola FC"
-  },
-  {
-    "id": 2,
-    "fecha": "2024-01-22",
-    "hora": "19:30",
-    "lugar": "Estadio Central",
-    "equipoLocal": {
-      "nombre": "Bondiola FC",
-      "jugadores": ["Juan Pérez", "Carlos Rodríguez", "Luis Martínez", "Diego Fernández"],
-      "goles": 2
-    },
-    "equipoVisitante": {
-      "nombre": "Adversario SC",
-      "jugadores": ["Roberto Silva", "Fernando Torres", "Javier Mendez"],
-      "goles": 2
+      "nombre": "Rival",
+      "jugadores": ["Don Julio", "Herni", "Jony", "Ale", "Diego", "Lucas"],
+      "goles": 0
     },
     "ganador": "Empate"
   }
