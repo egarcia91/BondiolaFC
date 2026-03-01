@@ -94,6 +94,52 @@
   margin: 0 0 0.5rem 0;
 }
 
+.nuevo-partido-fecha-hora {
+  margin-bottom: 1rem;
+}
+
+.nuevo-partido-fecha-label {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.95rem;
+}
+
+.nuevo-partido-fecha-sugerido {
+  font-weight: normal;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.nuevo-partido-fecha-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.nuevo-partido-date-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.nuevo-partido-input-date,
+.nuevo-partido-input-time {
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  min-width: 140px;
+}
+
+.nuevo-partido-input-time {
+  min-width: 100px;
+}
+
 .nuevo-partido-resumen ol {
   margin: 0.25rem 0 1rem 1.25rem;
   padding: 0;
@@ -101,6 +147,32 @@
 
 .nuevo-partido-resumen li {
   margin-bottom: 0.25rem;
+}
+
+.nuevo-partido-jugadores-edit {
+  list-style: none;
+  margin: 0.5rem 0 1rem 0;
+  padding: 0;
+}
+
+.nuevo-partido-jugador-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.nuevo-partido-jugador-row:last-child {
+  border-bottom: none;
+}
+
+.nuevo-partido-parsed-name {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  min-width: 180px;
 }
 
 .nuevo-partido-error {

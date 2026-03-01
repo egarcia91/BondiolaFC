@@ -1,0 +1,92 @@
+.selector-jugador {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.selector-jugador-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+  text-align: left;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.selector-jugador-trigger:hover {
+  border-color: var(--primary-color);
+}
+
+.selector-jugador-chevron {
+  font-size: 0.65rem;
+  opacity: 0.8;
+}
+
+.selector-jugador-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 2px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  z-index: 10;
+  max-height: 220px;
+  display: flex;
+  flex-direction: column;
+}
+
+.selector-jugador-opt-invitado {
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.selector-jugador-opt {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.selector-jugador-opt:hover {
+  background: var(--bg-color);
+}
+
+.selector-jugador-filter {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.9rem;
+  border: none;
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 0;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.selector-jugador-filter::placeholder {
+  color: var(--text-secondary);
+}
+
+.selector-jugador-filter:focus {
+  outline: none;
+}
+
+.selector-jugador-list {
+  overflow-y: auto;
+  max-height: 160px;
+}
+
+.selector-jugador-empty {
+  padding: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}

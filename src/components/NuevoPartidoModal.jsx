@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { addPartido, getJugadores, resolveNombreToEntrada } from '../services/firestore'
+import SelectorJugador from './SelectorJugador'
 import './NuevoPartidoModal.css'
 
 const DIAS_SEMANA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
@@ -103,24 +104,72 @@ function NuevoPartidoModal({ onClose, onPartidoCreado }) {
   const [texto, setTexto] = useState('')
   const [parseError, setParseError] = useState('')
   const [datos, setDatos] = useState(null)
+  const [jugadoresList, setJugadoresList] = useState([])
+  const [editRojo, setEditRojo] = useState([])
+  const [editAzul, setEditAzul] = useState([])
+  const [editFecha, setEditFecha] = useState('')
+  const [editHora, setEditHora] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const [loadingConfirm, setLoadingConfirm] = useState(false)
 
-  const handleProcesar = () => {
+  const handleProcesar = async () => {
     setParseError('')
     const result = parsePartidoMessage(texto)
     if (result.error) {
       setParseError(result.error)
       return
     }
-    setDatos(result)
-    setStep('confirmacion')
+    setLoadingConfirm(true)
+    try {
+      const jugadores = await getJugadores()
+      const rojo = (result.jugadoresRojo || []).map((nombre) => {
+        const e = resolveNombreToEntrada(nombre, jugadores)
+        return e.id ? { tipo: 'jugador', id: e.id } : { tipo: 'invitado', nombre: e.nombre || nombre }
+      })
+      const azul = (result.jugadoresAzul || []).map((nombre) => {
+        const e = resolveNombreToEntrada(nombre, jugadores)
+        return e.id ? { tipo: 'jugador', id: e.id } : { tipo: 'invitado', nombre: e.nombre || nombre }
+      })
+      setDatos(result)
+      setJugadoresList(jugadores)
+      setEditRojo(rojo)
+      setEditAzul(azul)
+      setEditFecha(result.fecha || '')
+      setEditHora(result.hora || '21:00')
+      setStep('confirmacion')
+    } catch (err) {
+      setParseError(err.message || 'Error al cargar jugadores')
+    } finally {
+      setLoadingConfirm(false)
+    }
   }
 
   const handleCorregir = () => {
     setStep('ingreso')
     setParseError('')
     setDatos(null)
+    setJugadoresList([])
+    setEditRojo([])
+    setEditAzul([])
+    setEditFecha('')
+    setEditHora('')
+  }
+
+  const setEditRojoAt = (index, val) => {
+    setEditRojo((prev) => {
+      const next = [...prev]
+      next[index] = val
+      return next
+    })
+  }
+
+  const setEditAzulAt = (index, val) => {
+    setEditAzul((prev) => {
+      const next = [...prev]
+      next[index] = val
+      return next
+    })
   }
 
   const handleDarDeAlta = async () => {
@@ -128,18 +177,15 @@ function NuevoPartidoModal({ onClose, onPartidoCreado }) {
     setSaveError('')
     setSaving(true)
     try {
-      const jugadores = await getJugadores()
-      const jugadoresRojo = (datos.jugadoresRojo || []).map((nombre) => {
-        const e = resolveNombreToEntrada(nombre, jugadores)
-        return e.id ? { id: e.id } : { nombre: e.nombre || nombre }
-      })
-      const jugadoresAzul = (datos.jugadoresAzul || []).map((nombre) => {
-        const e = resolveNombreToEntrada(nombre, jugadores)
-        return e.id ? { id: e.id } : { nombre: e.nombre || nombre }
-      })
+      const jugadoresRojo = editRojo.map((e) =>
+        e.tipo === 'jugador' ? { id: e.id } : { nombre: e.nombre }
+      )
+      const jugadoresAzul = editAzul.map((e) =>
+        e.tipo === 'jugador' ? { id: e.id } : { nombre: e.nombre }
+      )
       await addPartido({
-        fecha: datos.fecha,
-        hora: datos.hora,
+        fecha: editFecha || datos.fecha,
+        hora: editHora || datos.hora,
         lugar: datos.lugar || 'Por definir',
         concluido: false,
         equipoLocal: {
@@ -190,8 +236,8 @@ function NuevoPartidoModal({ onClose, onPartidoCreado }) {
               <button type="button" className="nuevo-partido-btn secundario" onClick={onClose}>
                 Cancelar
               </button>
-              <button type="button" className="nuevo-partido-btn" onClick={handleProcesar}>
-                Procesar
+              <button type="button" className="nuevo-partido-btn" onClick={handleProcesar} disabled={loadingConfirm}>
+                {loadingConfirm ? 'Procesando…' : 'Procesar'}
               </button>
             </div>
           </>
@@ -199,22 +245,67 @@ function NuevoPartidoModal({ onClose, onPartidoCreado }) {
 
         {step === 'confirmacion' && datos && (
           <>
-            <p className="nuevo-partido-pregunta">¿La información es correcta?</p>
+            <p className="nuevo-partido-pregunta">¿La información es correcta? Podés corregir fecha, hora y cada jugador.</p>
             <div className="nuevo-partido-resumen">
               <p><strong>Lugar:</strong> {datos.lugar || '—'}</p>
-              <p><strong>Fecha:</strong> {datos.fechaLabel}</p>
+              <div className="nuevo-partido-fecha-hora">
+                <p className="nuevo-partido-fecha-label">
+                  <strong>Fecha y hora del partido</strong>
+                  {datos.fechaLabel && (
+                    <span className="nuevo-partido-fecha-sugerido"> (sugerido: {datos.fechaLabel})</span>
+                  )}
+                </p>
+                <div className="nuevo-partido-fecha-inputs">
+                  <label className="nuevo-partido-date-label">
+                    Fecha
+                    <input
+                      type="date"
+                      value={editFecha}
+                      onChange={(e) => setEditFecha(e.target.value)}
+                      className="nuevo-partido-input-date"
+                    />
+                  </label>
+                  <label className="nuevo-partido-date-label">
+                    Hora
+                    <input
+                      type="time"
+                      value={editHora}
+                      onChange={(e) => setEditHora(e.target.value)}
+                      className="nuevo-partido-input-time"
+                    />
+                  </label>
+                </div>
+              </div>
               <p><strong>Jugadores de Azul:</strong></p>
-              <ol>
-                {datos.jugadoresAzul.map((j, i) => (
-                  <li key={i}>{j}</li>
+              <ul className="nuevo-partido-jugadores-edit">
+                {editAzul.map((_, i) => (
+                  <li key={i} className="nuevo-partido-jugador-row">
+                    <span className="nuevo-partido-parsed-name">¿{datos.jugadoresAzul[i]} es invitado o jugador?</span>
+                    <SelectorJugador
+                      id={`nuevo-azul-${i}`}
+                      parsedName={datos.jugadoresAzul[i]}
+                      value={editAzul[i]}
+                      jugadores={jugadoresList}
+                      onChange={(val) => setEditAzulAt(i, val)}
+                    />
+                  </li>
                 ))}
-              </ol>
+              </ul>
               <p><strong>Jugadores de Rojo:</strong></p>
-              <ol>
-                {datos.jugadoresRojo.map((j, i) => (
-                  <li key={i}>{j}</li>
+              <ul className="nuevo-partido-jugadores-edit">
+                {editRojo.map((_, i) => (
+                  <li key={i} className="nuevo-partido-jugador-row">
+                    <span className="nuevo-partido-parsed-name">¿{datos.jugadoresRojo[i]} es invitado o jugador?</span>
+                    <SelectorJugador
+                      id={`nuevo-rojo-${i}`}
+                      parsedName={datos.jugadoresRojo[i]}
+                      value={editRojo[i]}
+                      jugadores={jugadoresList}
+                      onChange={(val) => setEditRojoAt(i, val)}
+                    />
+                  </li>
                 ))}
-              </ol>
+              </ul>
             </div>
             {saveError && <p className="nuevo-partido-error">{saveError}</p>}
             <div className="nuevo-partido-actions">

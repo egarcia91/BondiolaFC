@@ -1,0 +1,179 @@
+.editar-equipos-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.editar-equipos-modal {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-width: 520px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
+}
+
+.editar-equipos-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.editar-equipos-header h3 {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.editar-equipos-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0 0.25rem;
+}
+
+.editar-equipos-close:hover {
+  color: var(--text-primary);
+}
+
+.editar-equipos-meta {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  text-transform: capitalize;
+}
+
+.editar-equipos-hint {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.25rem;
+}
+
+.editar-equipos-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.editar-equipos-block {
+  padding: 1rem;
+  background: var(--bg-color);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.editar-equipos-titulo {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.75rem 0;
+}
+
+.editar-equipos-lista {
+  list-style: none;
+  margin: 0 0 0.75rem 0;
+  padding: 0;
+}
+
+.editar-equipos-fila {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.editar-equipos-fila .selector-jugador {
+  flex: 1;
+  min-width: 0;
+}
+
+.editar-equipos-quitar {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.editar-equipos-quitar:hover {
+  background: var(--danger-color);
+  color: white;
+  border-color: var(--danger-color);
+}
+
+.editar-equipos-agregar {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 1px dashed var(--border-color);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.editar-equipos-agregar:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.editar-equipos-error {
+  color: var(--danger-color);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.editar-equipos-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.editar-equipos-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--primary-color);
+  color: white;
+}
+
+.editar-equipos-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.editar-equipos-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.editar-equipos-btn.secundario {
+  background: var(--bg-color);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.editar-equipos-btn.secundario:hover:not(:disabled) {
+  background: var(--border-color);
+}

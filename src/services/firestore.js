@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, doc, updateDoc, query, where, limit } from 'firebase/firestore'
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, where, limit } from 'firebase/firestore'
 import { db } from '../firebase'
 
 const JUGADORES = 'jugadores'
@@ -229,6 +229,135 @@ export async function updatePartido(partidoId, data) {
   if (cleaned && Object.keys(cleaned).length > 0) {
     await updateDoc(ref, cleaned)
   }
+}
+
+/**
+ * Elimina un partido de Firestore.
+ * @param {string} partidoId - ID del documento del partido
+ */
+export async function deletePartido(partidoId) {
+  if (!db) throw new Error('Firestore no está configurado')
+  const ref = doc(db, PARTIDOS, partidoId)
+  await deleteDoc(ref)
+}
+
+/**
+ * Revierte las estadísticas de los jugadores que participaron en un partido
+ * (restar 1 partido, victoria/empate/derrota según corresponda, goles del partido y Elo).
+ * Solo tiene efecto si el partido tiene estadisticasAplicadas === true.
+ * @param {Object} partido - Partido con equipoLocal, equipoVisitante, ganador, eloDeltas, golesAnotadores
+ * @param {Array} jugadores - Lista actual de jugadores (con partidos, victorias, goles, elo, eloHistorial)
+ */
+export async function revertirEstadisticasPartido(partido, jugadores) {
+  if (!partido || partido.estadisticasAplicadas !== true) return
+  const jugadoresById = new Map(jugadores.map((j) => [j.id, j]))
+  const nombreLocal = partido.equipoLocal?.nombre || 'Rojo'
+  const nombreVisitante = partido.equipoVisitante?.nombre || 'Azul'
+  const ganador = partido.ganador
+  const empate = ganador === 'Empate'
+  const ganadorEsLocal = !empate && ganador === nombreLocal
+
+  const countGolesPorId = (arr) => {
+    const m = new Map()
+    ;(arr || []).forEach((v) => {
+      if (v && v !== ANOTADOR_GENERAL_ID && !String(v).startsWith('guest:')) {
+        m.set(v, (m.get(v) || 0) + 1)
+      }
+    })
+    return m
+  }
+  const golesLocal = countGolesPorId(partido.equipoLocal?.golesAnotadores)
+  const golesVisitante = countGolesPorId(partido.equipoVisitante?.golesAnotadores)
+
+  const listaLocal = partido.equipoLocal?.jugadores ?? []
+  const listaVisitante = partido.equipoVisitante?.jugadores ?? []
+  const deltasLocal = partido.equipoLocal?.eloDeltas ?? []
+  const deltasVisitante = partido.equipoVisitante?.eloDeltas ?? []
+
+  const updates = []
+  listaLocal.forEach((entrada, idx) => {
+    if (!entrada?.id) return
+    const j = jugadoresById.get(entrada.id)
+    if (!j) return
+    const delta = deltasLocal[idx]
+    const golesEnPartido = golesLocal.get(entrada.id) || 0
+    const partidos = Math.max(0, (j.partidos ?? 0) - 1)
+    const victorias = Math.max(0, (j.victorias ?? 0) - (empate ? 0 : ganadorEsLocal ? 1 : 0))
+    const partidosEmpatados = Math.max(0, (j.partidosEmpatados ?? 0) - (empate ? 1 : 0))
+    const partidosPerdidos = Math.max(0, (j.partidosPerdidos ?? 0) - (empate ? 0 : ganadorEsLocal ? 0 : 1))
+    const goles = Math.max(0, (j.goles ?? 0) - golesEnPartido)
+    const hasDelta = typeof delta === 'number'
+    const eloAnterior = hasDelta ? (j.elo ?? 900) - delta : (j.elo ?? 900)
+    const eloHistorial =
+      hasDelta && Array.isArray(j.eloHistorial) && j.eloHistorial.length > 0
+        ? j.eloHistorial.slice(0, -1)
+        : (j.eloHistorial ?? [])
+    updates.push({
+      id: entrada.id,
+      partidos,
+      victorias,
+      partidosEmpatados,
+      partidosPerdidos,
+      goles,
+      elo: Math.max(0, Math.round(eloAnterior)),
+      eloHistorial,
+    })
+  })
+  listaVisitante.forEach((entrada, idx) => {
+    if (!entrada?.id) return
+    const j = jugadoresById.get(entrada.id)
+    if (!j) return
+    const delta = deltasVisitante[idx]
+    const golesEnPartido = golesVisitante.get(entrada.id) || 0
+    const partidos = Math.max(0, (j.partidos ?? 0) - 1)
+    const victorias = Math.max(0, (j.victorias ?? 0) - (empate ? 0 : !ganadorEsLocal ? 1 : 0))
+    const partidosEmpatados = Math.max(0, (j.partidosEmpatados ?? 0) - (empate ? 1 : 0))
+    const partidosPerdidos = Math.max(0, (j.partidosPerdidos ?? 0) - (empate ? 0 : !ganadorEsLocal ? 0 : 1))
+    const goles = Math.max(0, (j.goles ?? 0) - golesEnPartido)
+    const hasDelta = typeof delta === 'number'
+    const eloAnterior = hasDelta ? (j.elo ?? 900) - delta : (j.elo ?? 900)
+    const eloHistorial =
+      hasDelta && Array.isArray(j.eloHistorial) && j.eloHistorial.length > 0
+        ? j.eloHistorial.slice(0, -1)
+        : (j.eloHistorial ?? [])
+    updates.push({
+      id: entrada.id,
+      partidos,
+      victorias,
+      partidosEmpatados,
+      partidosPerdidos,
+      goles,
+      elo: Math.max(0, Math.round(eloAnterior)),
+      eloHistorial,
+    })
+  })
+
+  await Promise.all(
+    updates.map((u) =>
+      updateJugadorDespuesPartido(u.id, {
+        elo: u.elo,
+        eloHistorial: u.eloHistorial,
+        partidos: u.partidos,
+        victorias: u.victorias,
+        partidosEmpatados: u.partidosEmpatados,
+        partidosPerdidos: u.partidosPerdidos,
+        goles: u.goles,
+      })
+    )
+  )
+}
+
+/**
+ * Da de baja un partido: revierte estadísticas de jugadores (si estaban aplicadas) y elimina el partido.
+ * @param {Object} partido - Partido normalizado (con jugadores por id, eloDeltas, golesAnotadores)
+ * @param {Array} jugadores - Lista actual de jugadores
+ */
+export async function darDeBajaPartido(partido, jugadores) {
+  if (!partido?.id) throw new Error('Partido inválido')
+  if (partido.estadisticasAplicadas === true) {
+    await revertirEstadisticasPartido(partido, jugadores)
+  }
+  await deletePartido(partido.id)
 }
 
 /**

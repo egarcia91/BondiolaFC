@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
-import { getPartidos, getJugadores, normalizePartidos } from '../services/firestore'
+import { getPartidos, getJugadores, normalizePartidos, darDeBajaPartido } from '../services/firestore'
 import NuevoPartidoModal from './NuevoPartidoModal'
 import EditarPartidoModal from './EditarPartidoModal'
+import EditarPartidoEquiposModal from './EditarPartidoEquiposModal'
 import './Partidos.css'
 
 function Partidos({ isAdmin }) {
@@ -12,6 +13,8 @@ function Partidos({ isAdmin }) {
   const [expandidoId, setExpandidoId] = useState(null)
   const [showNuevoPartidoModal, setShowNuevoPartidoModal] = useState(false)
   const [partidoEditando, setPartidoEditando] = useState(null)
+  const [partidoEditandoEquipos, setPartidoEditandoEquipos] = useState(null)
+  const [bajandoPartidoId, setBajandoPartidoId] = useState(null)
 
   const partidosNormalized = useMemo(
     () => normalizePartidos(partidos, jugadores),
@@ -73,6 +76,23 @@ function Partidos({ isAdmin }) {
 
   const refreshPartidos = () => {
     getPartidos().then(setPartidos).catch(() => {})
+  }
+
+  const handleDarDeBaja = async (partido) => {
+    const mensaje = '¿Dar de baja este partido? Se eliminará y se restarán partido, victoria/empate/derrota, goles y Elo a los jugadores que participaron.'
+    if (!window.confirm(mensaje)) return
+    setBajandoPartidoId(partido.id)
+    try {
+      const jugadoresActuales = await getJugadores()
+      await darDeBajaPartido(partido, jugadoresActuales)
+      await getPartidos().then(setPartidos)
+      await getJugadores().then(setJugadores)
+    } catch (err) {
+      console.error(err)
+      alert(err.message || 'Error al dar de baja el partido')
+    } finally {
+      setBajandoPartidoId(null)
+    }
   }
 
   useEffect(() => {
@@ -192,6 +212,15 @@ function Partidos({ isAdmin }) {
           partido={partidoEditando}
           jugadores={jugadores}
           onClose={() => setPartidoEditando(null)}
+          onSaved={refreshPartidos}
+        />
+      )}
+
+      {partidoEditandoEquipos && (
+        <EditarPartidoEquiposModal
+          partido={partidoEditandoEquipos}
+          jugadores={jugadores}
+          onClose={() => setPartidoEditandoEquipos(null)}
           onSaved={refreshPartidos}
         />
       )}
@@ -317,9 +346,24 @@ function Partidos({ isAdmin }) {
                       <button
                         type="button"
                         className="partido-btn-editar"
+                        onClick={() => setPartidoEditandoEquipos(partido)}
+                      >
+                        Editar equipos
+                      </button>
+                      <button
+                        type="button"
+                        className="partido-btn-editar"
                         onClick={() => setPartidoEditando(partido)}
                       >
                         Editar resultado
+                      </button>
+                      <button
+                        type="button"
+                        className="partido-btn-editar partido-btn-baja"
+                        onClick={() => handleDarDeBaja(partido)}
+                        disabled={bajandoPartidoId === partido.id}
+                      >
+                        {bajandoPartidoId === partido.id ? 'Dando de baja…' : 'Dar de baja'}
                       </button>
                     </div>
                   )}
@@ -446,13 +490,30 @@ function Partidos({ isAdmin }) {
                         </ul>
                       </div>
                       {isAdmin && (
-                        <button
-                          type="button"
-                          className="partido-btn-editar partido-btn-editar-mobile"
-                          onClick={() => setPartidoEditando(partido)}
-                        >
-                          Editar resultado
-                        </button>
+                        <div className="partido-detail-actions">
+                          <button
+                            type="button"
+                            className="partido-btn-editar partido-btn-editar-mobile"
+                            onClick={() => setPartidoEditandoEquipos(partido)}
+                          >
+                            Editar equipos
+                          </button>
+                          <button
+                            type="button"
+                            className="partido-btn-editar partido-btn-editar-mobile"
+                            onClick={() => setPartidoEditando(partido)}
+                          >
+                            Editar resultado
+                          </button>
+                          <button
+                            type="button"
+                            className="partido-btn-editar partido-btn-editar-mobile partido-btn-baja"
+                            onClick={() => handleDarDeBaja(partido)}
+                            disabled={bajandoPartidoId === partido.id}
+                          >
+                            {bajandoPartidoId === partido.id ? 'Dando de baja…' : 'Dar de baja'}
+                          </button>
+                        </div>
                       )}
                     </div>
                   )}

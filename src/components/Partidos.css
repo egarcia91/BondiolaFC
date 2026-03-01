@@ -280,6 +280,22 @@
   margin-top: 1.25rem;
   padding-top: 1rem;
   border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.partido-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.partido-detail-actions .partido-btn-editar-mobile {
+  flex: 1;
+  min-width: 140px;
+  margin-top: 0;
 }
 
 .partido-btn-editar {
@@ -295,6 +311,17 @@
 
 .partido-btn-editar:hover {
   background: var(--border-color);
+}
+
+.partido-btn-baja {
+  border-color: var(--danger-color, #dc2626);
+  color: var(--danger-color, #dc2626);
+}
+
+.partido-btn-baja:hover:not(:disabled) {
+  background: var(--danger-color, #dc2626);
+  color: white;
+  border-color: var(--danger-color, #dc2626);
 }
 
 .partido-btn-editar-mobile {
