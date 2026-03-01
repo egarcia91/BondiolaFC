@@ -2,6 +2,13 @@
   width: 100%;
 }
 
+.partidos-error {
+  text-align: center;
+  padding: 3rem;
+  color: var(--danger-color);
+  font-size: 1.1rem;
+}
+
 .partidos-list {
   display: flex;
   flex-direction: column;

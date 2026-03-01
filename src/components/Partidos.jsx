@@ -1,18 +1,27 @@
 import { useState, useEffect } from 'react'
-import partidosData from '../data/partidos.json'
+import { getPartidos } from '../services/firestore'
 import './Partidos.css'
 
 function Partidos() {
   const [partidos, setPartidos] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    // Ordenar partidos por fecha (más recientes primero)
-    const sorted = [...partidosData].sort((a, b) => {
-      const dateA = new Date(a.fecha + ' ' + a.hora)
-      const dateB = new Date(b.fecha + ' ' + b.hora)
-      return dateB - dateA
-    })
-    setPartidos(sorted)
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    getPartidos()
+      .then((data) => {
+        if (!cancelled) setPartidos(data)
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err.message || 'Error al cargar partidos')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => { cancelled = true }
   }, [])
 
   const formatFecha = (fecha) => {
@@ -29,6 +38,24 @@ function Partidos() {
     const ahora = new Date()
     const fechaPartido = new Date(fecha + ' ' + hora)
     return fechaPartido > ahora
+  }
+
+  if (loading) {
+    return (
+      <div className="partidos-container">
+        <h2 className="section-title">Partidos</h2>
+        <p className="empty-state">Cargando partidos…</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="partidos-container">
+        <h2 className="section-title">Partidos</h2>
+        <p className="empty-state partidos-error">{error}</p>
+      </div>
+    )
   }
 
   return (
@@ -61,11 +88,11 @@ function Partidos() {
                   <div className="equipo-info">
                     <div className="equipo-nombre equipo-local">
                       Rojo
-                      {!esFuturo && !esEmpate && partido.ganador === partido.equipoLocal.nombre && (
+                      {!esFuturo && !esEmpate && partido.ganador === partido.equipoLocal?.nombre && (
                         <span className="badge-ganador">🏆</span>
                       )}
                     </div>
-                    <div className="equipo-goles">{partido.equipoLocal.goles}</div>
+                    <div className="equipo-goles">{partido.equipoLocal?.goles ?? 0}</div>
                   </div>
 
                   <div className="vs-separator">VS</div>
@@ -73,11 +100,11 @@ function Partidos() {
                   <div className="equipo-info">
                     <div className="equipo-nombre equipo-visitante">
                       Azul
-                      {!esFuturo && !esEmpate && partido.ganador === partido.equipoVisitante.nombre && (
+                      {!esFuturo && !esEmpate && partido.ganador === partido.equipoVisitante?.nombre && (
                         <span className="badge-ganador">🏆</span>
                       )}
                     </div>
-                    <div className="equipo-goles">{partido.equipoVisitante.goles}</div>
+                    <div className="equipo-goles">{partido.equipoVisitante?.goles ?? 0}</div>
                   </div>
                 </div>
 
@@ -89,7 +116,7 @@ function Partidos() {
                   <div className="jugadores-equipo">
                     <h4 className="jugadores-titulo">Rojo</h4>
                     <ul className="jugadores-lista">
-                      {partido.equipoLocal.jugadores.map((jugador, idx) => (
+                      {(partido.equipoLocal?.jugadores ?? []).map((jugador, idx) => (
                         <li key={idx}>{jugador}</li>
                       ))}
                     </ul>
@@ -97,7 +124,7 @@ function Partidos() {
                   <div className="jugadores-equipo">
                     <h4 className="jugadores-titulo">Azul</h4>
                     <ul className="jugadores-lista">
-                      {partido.equipoVisitante.jugadores.map((jugador, idx) => (
+                      {(partido.equipoVisitante?.jugadores ?? []).map((jugador, idx) => (
                         <li key={idx}>{jugador}</li>
                       ))}
                     </ul>
