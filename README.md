@@ -124,7 +124,7 @@ Para agregar un nuevo jugador, edita el archivo `src/data/jugadores.json`:
 
 La aplicación está completamente optimizada para dispositivos móviles, tablets y escritorio.
 
-## 🚢 Build para Producción
+## 🚢 Build y despliegue
 
 Para crear una versión optimizada para producción:
 
@@ -132,10 +132,6 @@ Para crear una versión optimizada para producción:
 npm run build
 ```
 
-Los archivos se generarán en la carpeta `dist/`.
+Los archivos se generarán en la carpeta `dist/`. Para previsualizar el build: `npm run preview`.
 
-Para previsualizar el build de producción:
-
-```bash
-npm run preview
-```
+**Despliegue a GitHub Pages**: El proyecto usa GitHub Actions (`.github/workflows/deploy.yml`) para construir y publicar en cada push a `main`. La configuración de Firebase se inyecta desde **GitHub Secrets**; así la clave de API no se commitea. Ver [docs/SEGURIDAD-FIREBASE.md](docs/SEGURIDAD-FIREBASE.md) para configurar secretos y rotar claves si fue expuesta.
