@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import { getJugadores, getPartidos, normalizePartidos } from '../services/firestore'
+import NuevoJugadorModal from './NuevoJugadorModal'
 import './Jugadores.css'
 
 const POSICIONES = ['Delantero', 'Defensor', 'Mediocampista', 'Arquero']
 
-function Jugadores() {
+function Jugadores({ isAdmin }) {
   const [jugadores, setJugadores] = useState([])
   const [partidos, setPartidos] = useState([])
   const [loading, setLoading] = useState(true)
@@ -12,6 +13,7 @@ function Jugadores() {
   const [filtroPosicion, setFiltroPosicion] = useState('')
   const [ordenPor, setOrdenPor] = useState('presentes') // 'presentes' por defecto
   const [expandidoId, setExpandidoId] = useState(null)
+  const [showNuevoJugadorModal, setShowNuevoJugadorModal] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -69,7 +71,14 @@ function Jugadores() {
   if (loading) {
     return (
       <div className="jugadores-container">
-        <h2 className="section-title">Jugadores</h2>
+        <div className="jugadores-header">
+          <h2 className="section-title">Jugadores</h2>
+          {isAdmin && (
+            <button type="button" className="jugadores-btn-nuevo" disabled>
+              Nuevo jugador
+            </button>
+          )}
+        </div>
         <p className="empty-state">Cargando jugadores…</p>
       </div>
     )
@@ -78,15 +87,50 @@ function Jugadores() {
   if (error) {
     return (
       <div className="jugadores-container">
-        <h2 className="section-title">Jugadores</h2>
+        <div className="jugadores-header">
+          <h2 className="section-title">Jugadores</h2>
+          {isAdmin && (
+            <button type="button" className="jugadores-btn-nuevo" onClick={() => setShowNuevoJugadorModal(true)}>
+              Nuevo jugador
+            </button>
+          )}
+        </div>
         <p className="empty-state jugadores-error">{error}</p>
+        {showNuevoJugadorModal && (
+          <NuevoJugadorModal
+            onClose={() => setShowNuevoJugadorModal(false)}
+            onSaved={() => { setShowNuevoJugadorModal(false); getJugadores().then(setJugadores).catch(() => {}) }}
+          />
+        )}
       </div>
     )
   }
 
+  const refreshJugadores = () => {
+    getJugadores().then(setJugadores).catch(() => {})
+  }
+
   return (
     <div className="jugadores-container">
-      <h2 className="section-title">Jugadores</h2>
+      <div className="jugadores-header">
+        <h2 className="section-title">Jugadores</h2>
+        {isAdmin && (
+          <button
+            type="button"
+            className="jugadores-btn-nuevo"
+            onClick={() => setShowNuevoJugadorModal(true)}
+          >
+            Nuevo jugador
+          </button>
+        )}
+      </div>
+
+      {showNuevoJugadorModal && (
+        <NuevoJugadorModal
+          onClose={() => setShowNuevoJugadorModal(false)}
+          onSaved={refreshJugadores}
+        />
+      )}
 
       {jugadores.length > 0 && (
         <div className="jugadores-controles">

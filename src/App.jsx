@@ -150,7 +150,7 @@ function App() {
       </nav>
 
       <main className="app-main">
-        {activeSection === 'jugadores' && <Jugadores />}
+        {activeSection === 'jugadores' && <Jugadores isAdmin={jugadorActual?.admin === true} />}
         {activeSection === 'partidos' && <Partidos isAdmin={jugadorActual?.admin === true} />}
       </main>
 

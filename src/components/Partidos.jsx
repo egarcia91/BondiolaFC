@@ -47,6 +47,30 @@ function Partidos({ isAdmin }) {
     return entrada.nombre ? `invitado (${entrada.nombre})` : 'invitado'
   }
 
+  /** Cantidad de goles de un jugador en un partido (por equipo). */
+  const getGolesEnPartido = (partido, equipoKey, entrada) => {
+    const arr = partido?.[equipoKey]?.golesAnotadores ?? []
+    if (!entrada) return 0
+    if (entrada.id) {
+      return arr.filter((id) => id === entrada.id).length
+    }
+    if (entrada.nombre) {
+      return arr.filter((val) => val === `guest:${entrada.nombre}`).length
+    }
+    return 0
+  }
+
+  const GolesIcon = ({ count }) => {
+    if (!count || count < 1) return null
+    return (
+      <span className="partido-jugador-goles" title={`${count} gol${count > 1 ? 'es' : ''}`} aria-hidden>
+        {Array.from({ length: count }, (_, i) => (
+          <span key={i} className="partido-gol-icon" aria-hidden>⚽</span>
+        ))}
+      </span>
+    )
+  }
+
   const refreshPartidos = () => {
     getPartidos().then(setPartidos).catch(() => {})
   }
@@ -246,9 +270,11 @@ function Partidos({ isAdmin }) {
                       <ul className="jugadores-lista">
                         {(partido.equipoLocal?.jugadores ?? []).map((jugador, idx) => {
                           const delta = partido.equipoLocal?.eloDeltas?.[idx]
+                          const goles = getGolesEnPartido(partido, 'equipoLocal', jugador)
                           return (
                             <li key={idx}>
                               {displayJugador(jugador)}
+                              <GolesIcon count={goles} />
                               <span className="partido-jugador-elo-wrap">
                                 <span className="partido-jugador-elo">{getElo(jugador)}</span>
                                 {delta != null && delta !== 0 && (
@@ -267,9 +293,11 @@ function Partidos({ isAdmin }) {
                       <ul className="jugadores-lista">
                         {(partido.equipoVisitante?.jugadores ?? []).map((jugador, idx) => {
                           const delta = partido.equipoVisitante?.eloDeltas?.[idx]
+                          const goles = getGolesEnPartido(partido, 'equipoVisitante', jugador)
                           return (
                             <li key={idx}>
                               {displayJugador(jugador)}
+                              <GolesIcon count={goles} />
                               <span className="partido-jugador-elo-wrap">
                                 <span className="partido-jugador-elo">{getElo(jugador)}</span>
                                 {delta != null && delta !== 0 && (
@@ -379,9 +407,11 @@ function Partidos({ isAdmin }) {
                         <ul className="jugadores-lista">
                           {(partido.equipoLocal?.jugadores ?? []).map((jugador, idx) => {
                             const delta = partido.equipoLocal?.eloDeltas?.[idx]
+                            const goles = getGolesEnPartido(partido, 'equipoLocal', jugador)
                             return (
                               <li key={idx}>
                                 {displayJugador(jugador)}
+                                <GolesIcon count={goles} />
                                 <span className="partido-jugador-elo-wrap">
                                   <span className="partido-jugador-elo">{getElo(jugador)}</span>
                                   {delta != null && delta !== 0 && (
@@ -397,9 +427,11 @@ function Partidos({ isAdmin }) {
                         <ul className="jugadores-lista">
                           {(partido.equipoVisitante?.jugadores ?? []).map((jugador, idx) => {
                             const delta = partido.equipoVisitante?.eloDeltas?.[idx]
+                            const goles = getGolesEnPartido(partido, 'equipoVisitante', jugador)
                             return (
                               <li key={idx}>
                                 {displayJugador(jugador)}
+                                <GolesIcon count={goles} />
                                 <span className="partido-jugador-elo-wrap">
                                   <span className="partido-jugador-elo">{getElo(jugador)}</span>
                                   {delta != null && delta !== 0 && (

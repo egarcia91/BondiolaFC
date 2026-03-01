@@ -251,6 +251,18 @@
   font-size: 0.85rem;
 }
 
+.partido-jugador-goles {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin-left: 0.35rem;
+}
+
+.partido-gol-icon {
+  font-size: 0.9em;
+  line-height: 1;
+}
+
 .partido-elo-delta {
   font-weight: 700;
   font-size: 0.85rem;
