@@ -361,6 +361,90 @@ export async function darDeBajaPartido(partido, jugadores) {
 }
 
 /**
+ * Aplica el resultado de un partido: actualiza goles, calcula Elo y estadísticas de jugadores, guarda partido como concluido.
+ * @param {Object} partidoActualizado - Partido con id, equipoLocal { nombre, jugadores, goles, golesAnotadores }, equipoVisitante igual
+ * @param {Array} jugadores - Lista actual de jugadores
+ */
+export async function aplicarResultadoPartido(partidoActualizado, jugadores) {
+  if (!partidoActualizado?.id) throw new Error('Partido inválido')
+  const partido = partidoActualizado
+  const golesLocal = partido.equipoLocal?.goles ?? 0
+  const golesVisitante = partido.equipoVisitante?.goles ?? 0
+  const nombreLocal = partido.equipoLocal?.nombre || 'Rojo'
+  const nombreVisitante = partido.equipoVisitante?.nombre || 'Azul'
+  const ganador =
+    golesLocal > golesVisitante ? nombreLocal : golesVisitante > golesLocal ? nombreVisitante : 'Empate'
+
+  const equipoLocal = {
+    ...partido.equipoLocal,
+    nombre: nombreLocal,
+    jugadores: partido.equipoLocal?.jugadores ?? [],
+    goles: golesLocal,
+    golesAnotadores: partido.equipoLocal?.golesAnotadores ?? [],
+  }
+  const equipoVisitante = {
+    ...partido.equipoVisitante,
+    nombre: nombreVisitante,
+    jugadores: partido.equipoVisitante?.jugadores ?? [],
+    goles: golesVisitante,
+    golesAnotadores: partido.equipoVisitante?.golesAnotadores ?? [],
+  }
+
+  const aplicarEstadisticas = partido.estadisticasAplicadas !== true
+  if (aplicarEstadisticas) {
+    const { updates: eloUpdates, eloDeltasLocal, eloDeltasVisitante } = computeEloUpdatesForPartido(
+      { ...partido, equipoLocal, equipoVisitante, ganador },
+      ganador,
+      jugadores
+    )
+    equipoLocal.eloDeltas = eloDeltasLocal
+    equipoVisitante.eloDeltas = eloDeltasVisitante
+
+    const countGolesPorId = (arr) => {
+      const m = new Map()
+      ;(arr || []).forEach((v) => {
+        if (v && v !== ANOTADOR_GENERAL_ID && !String(v).startsWith('guest:')) {
+          m.set(v, (m.get(v) || 0) + 1)
+        }
+      })
+      return m
+    }
+    const golesRojoMap = countGolesPorId(equipoLocal.golesAnotadores)
+    const golesAzulMap = countGolesPorId(equipoVisitante.golesAnotadores)
+    const jugadoresByIdMap = new Map(jugadores.map((j) => [j.id, j]))
+    const idsLocal = new Set((equipoLocal.jugadores ?? []).map((e) => e?.id).filter(Boolean))
+    const idsVisitante = new Set((equipoVisitante.jugadores ?? []).map((e) => e?.id).filter(Boolean))
+    const golesParaJugador = (j, golesMap) => (j && golesMap.get(j.id)) || 0
+
+    await Promise.all(
+      eloUpdates.map((u) => {
+        const j = jugadoresByIdMap.get(u.id)
+        const enRojo = j && idsLocal.has(j.id)
+        const golesEnPartido = enRojo ? golesParaJugador(j, golesRojoMap) : golesParaJugador(j, golesAzulMap)
+        const newGoles = (j?.goles ?? 0) + golesEnPartido
+        return updateJugadorDespuesPartido(u.id, {
+          elo: u.newElo,
+          eloHistorial: u.eloHistorial,
+          partidos: u.partidos,
+          victorias: u.victorias,
+          partidosEmpatados: u.partidosEmpatados,
+          partidosPerdidos: u.partidosPerdidos,
+          goles: newGoles,
+        })
+      })
+    )
+  }
+
+  await updatePartido(partido.id, {
+    concluido: true,
+    equipoLocal,
+    equipoVisitante,
+    ganador,
+    ...(aplicarEstadisticas ? { estadisticasAplicadas: true } : {}),
+  })
+}
+
+/**
  * Actualiza el registro de un jugador (mail y registrado).
  * @param {string} jugadorId - ID del documento del jugador
  * @param {{ mail: string, registrado: boolean }} data

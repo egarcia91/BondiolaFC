@@ -324,6 +324,19 @@
   border-color: var(--danger-color, #dc2626);
 }
 
+.partido-btn-en-vivo {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.partido-btn-en-vivo:hover {
+  opacity: 0.9;
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
 .partido-btn-editar-mobile {
   width: 100%;
   margin-top: 1rem;

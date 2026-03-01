@@ -1,0 +1,357 @@
+.partido-en-vivo {
+  padding: 1rem;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.partido-en-vivo-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.partido-en-vivo-volver {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.partido-en-vivo-volver:hover {
+  background: var(--border-color);
+}
+
+.partido-en-vivo-titulo {
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.partido-en-vivo-meta {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+.partido-en-vivo-marcador {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 2px solid var(--border-color);
+  margin-bottom: 1rem;
+}
+
+.partido-en-vivo-equipo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 80px;
+}
+
+.partido-en-vivo-equipo-nombre {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.partido-en-vivo-goles {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.partido-en-vivo-vs {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.partido-en-vivo-cronometro {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding: 0.5rem;
+  background: var(--bg-color);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.partido-en-vivo-cronometro-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  display: block;
+}
+
+.partido-en-vivo-cronometro-valor {
+  font-size: 1.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.partido-en-vivo-hint {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.partido-en-vivo-cuerpo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.partido-en-vivo-centro {
+  grid-column: 1 / -1;
+}
+
+.partido-en-vivo-columna-titulo {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.partido-en-vivo-jugadores {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.partido-en-vivo-jugador-btn {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  height: 2.75rem;
+  padding: 0 0.75rem;
+  font-size: 0.95rem;
+  text-align: left;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+}
+
+.partido-en-vivo-jugador-btn:hover {
+  background: var(--bg-color);
+  border-color: var(--primary-color);
+}
+
+.partido-en-vivo-gol-general {
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+.partido-en-vivo-gol-general:hover {
+  color: var(--text-primary);
+}
+
+.partido-en-vivo-error {
+  color: var(--danger-color);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.partido-en-vivo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.partido-en-vivo-btn-revertir {
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.partido-en-vivo-btn-revertir:hover:not(:disabled) {
+  background: var(--bg-color);
+  border-color: var(--text-secondary);
+}
+
+.partido-en-vivo-btn-revertir:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.partido-en-vivo-btn-terminar {
+  padding: 0.75rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary-color);
+  color: white;
+  cursor: pointer;
+}
+
+.partido-en-vivo-btn-terminar:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.partido-en-vivo-btn-terminar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Vista celular apaisado: listados izquierda/derecha, resultado y tiempo en el centro */
+@media (orientation: landscape) and (max-height: 500px) {
+  .partido-en-vivo {
+    max-width: none;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    box-sizing: border-box;
+  }
+
+  .partido-en-vivo-header {
+    margin-bottom: 0.25rem;
+  }
+
+  .partido-en-vivo-meta {
+    margin-bottom: 0.5rem;
+  }
+
+  .partido-en-vivo-cuerpo {
+    display: grid;
+    grid-template-columns: 1fr minmax(150px, 220px) 1fr;
+    grid-template-rows: 1fr;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    min-height: 0;
+    flex: 1;
+    align-items: stretch;
+  }
+
+  .partido-en-vivo-centro {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
+  .partido-en-vivo-columna-rojo {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .partido-en-vivo-columna-rojo .partido-en-vivo-columna-titulo,
+  .partido-en-vivo-columna-rojo .partido-en-vivo-jugadores {
+    width: 100%;
+    max-width: 100px;
+    align-items: flex-start;
+  }
+
+  .partido-en-vivo-columna-azul {
+    grid-column: 3;
+    grid-row: 1;
+    min-width: 0;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .partido-en-vivo-columna-azul .partido-en-vivo-columna-titulo,
+  .partido-en-vivo-columna-azul .partido-en-vivo-jugadores {
+    width: 100%;
+    max-width: 100px;
+    align-items: flex-end;
+    margin-left: auto;
+  }
+
+  .partido-en-vivo-marcador {
+    padding: 0.5rem;
+    margin-bottom: 0;
+  }
+
+  .partido-en-vivo-goles {
+    font-size: 1.75rem;
+  }
+
+  .partido-en-vivo-cronometro {
+    margin-bottom: 0;
+    padding: 0.35rem;
+  }
+
+  .partido-en-vivo-cronometro-valor {
+    font-size: 1.25rem;
+  }
+
+  .partido-en-vivo-actions {
+    margin: 0;
+    gap: 0.35rem;
+  }
+
+  .partido-en-vivo-btn-revertir {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .partido-en-vivo-btn-terminar {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .partido-en-vivo-jugador-btn {
+    width: 100%;
+    min-height: 2.25rem;
+    height: 2.25rem;
+    padding: 0 0.5rem;
+    font-size: 0.85rem;
+    box-sizing: border-box;
+  }
+
+  .partido-en-vivo-hint {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) and (orientation: portrait) {
+  .partido-en-vivo-cuerpo {
+    grid-template-columns: 1fr;
+  }
+
+  .partido-en-vivo-columna-rojo,
+  .partido-en-vivo-columna-azul {
+    grid-column: 1;
+  }
+}

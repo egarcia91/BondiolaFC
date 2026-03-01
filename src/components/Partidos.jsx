@@ -3,9 +3,10 @@ import { getPartidos, getJugadores, normalizePartidos, darDeBajaPartido } from '
 import NuevoPartidoModal from './NuevoPartidoModal'
 import EditarPartidoModal from './EditarPartidoModal'
 import EditarPartidoEquiposModal from './EditarPartidoEquiposModal'
+import PartidoEnVivo from './PartidoEnVivo'
 import './Partidos.css'
 
-function Partidos({ isAdmin }) {
+function Partidos({ isAdmin, isAuthenticated }) {
   const [partidos, setPartidos] = useState([])
   const [jugadores, setJugadores] = useState([])
   const [loading, setLoading] = useState(true)
@@ -15,6 +16,7 @@ function Partidos({ isAdmin }) {
   const [partidoEditando, setPartidoEditando] = useState(null)
   const [partidoEditandoEquipos, setPartidoEditandoEquipos] = useState(null)
   const [bajandoPartidoId, setBajandoPartidoId] = useState(null)
+  const [partidoEnVivo, setPartidoEnVivo] = useState(null)
 
   const partidosNormalized = useMemo(
     () => normalizePartidos(partidos, jugadores),
@@ -224,8 +226,19 @@ function Partidos({ isAdmin }) {
           onSaved={refreshPartidos}
         />
       )}
-      
-      {partidosNormalized.length === 0 ? (
+
+      {partidoEnVivo ? (
+        <PartidoEnVivo
+          partido={partidoEnVivo}
+          jugadores={jugadores}
+          onTerminar={() => {
+            setPartidoEnVivo(null)
+            refreshPartidos()
+            getJugadores().then(setJugadores).catch(() => {})
+          }}
+          onVolver={() => setPartidoEnVivo(null)}
+        />
+      ) : partidosNormalized.length === 0 ? (
         <p className="empty-state">No hay partidos registrados</p>
       ) : (
         <>
@@ -252,13 +265,52 @@ function Partidos({ isAdmin }) {
                   </div>
 
                   {aunNoOcurrio ? (
-                    <div className="partido-resultado partido-resultado-futuro">
-                      <span className="partido-aun-no">Aún no ocurrió</span>
-                      <div className="partido-elo-promedio-futuro">
-                        <span>Elo prom. Rojo: {getEloPromedio(partido.equipoLocal?.jugadores)}</span>
-                        <span>Elo prom. Azul: {getEloPromedio(partido.equipoVisitante?.jugadores)}</span>
+                    <>
+                      <div className="partido-resultado partido-resultado-futuro">
+                        <span className="partido-aun-no">Aún no ocurrió</span>
+                        <div className="partido-elo-promedio-futuro">
+                          <span>Elo prom. Rojo: {getEloPromedio(partido.equipoLocal?.jugadores)}</span>
+                          <span>Elo prom. Azul: {getEloPromedio(partido.equipoVisitante?.jugadores)}</span>
+                        </div>
                       </div>
-                    </div>
+                      <div className="partido-card-actions">
+                        {isAuthenticated && (
+                          <button
+                            type="button"
+                            className="partido-btn-en-vivo"
+                            onClick={() => setPartidoEnVivo(partido)}
+                          >
+                            Partido en vivo
+                          </button>
+                        )}
+                        {isAdmin && (
+                          <>
+                            <button
+                              type="button"
+                              className="partido-btn-editar"
+                              onClick={() => setPartidoEditandoEquipos(partido)}
+                            >
+                              Editar equipos
+                            </button>
+                            <button
+                              type="button"
+                              className="partido-btn-editar"
+                              onClick={() => setPartidoEditando(partido)}
+                            >
+                              Editar resultado
+                            </button>
+                            <button
+                              type="button"
+                              className="partido-btn-editar partido-btn-baja"
+                              onClick={() => handleDarDeBaja(partido)}
+                              disabled={bajandoPartidoId === partido.id}
+                            >
+                              {bajandoPartidoId === partido.id ? 'Dando de baja…' : 'Dar de baja'}
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </>
                   ) : (
                     <>
                       <div className="partido-resultado">
@@ -419,13 +471,52 @@ function Partidos({ isAdmin }) {
                       </div>
 
                       {aunNoOcurrio ? (
-                        <div className="partido-detail-resultado partido-resultado-futuro">
-                          <span className="partido-aun-no">Aún no ocurrió</span>
-                          <div className="partido-elo-promedio-futuro">
-                            <span>Elo prom. Rojo: {getEloPromedio(partido.equipoLocal?.jugadores)}</span>
-                            <span>Elo prom. Azul: {getEloPromedio(partido.equipoVisitante?.jugadores)}</span>
+                        <>
+                          <div className="partido-detail-resultado partido-resultado-futuro">
+                            <span className="partido-aun-no">Aún no ocurrió</span>
+                            <div className="partido-elo-promedio-futuro">
+                              <span>Elo prom. Rojo: {getEloPromedio(partido.equipoLocal?.jugadores)}</span>
+                              <span>Elo prom. Azul: {getEloPromedio(partido.equipoVisitante?.jugadores)}</span>
+                            </div>
                           </div>
-                        </div>
+                          <div className="partido-detail-actions">
+                            {isAuthenticated && (
+                              <button
+                                type="button"
+                                className="partido-btn-en-vivo partido-btn-editar-mobile"
+                                onClick={() => setPartidoEnVivo(partido)}
+                              >
+                                Partido en vivo
+                              </button>
+                            )}
+                            {isAdmin && (
+                              <>
+                                <button
+                                  type="button"
+                                  className="partido-btn-editar partido-btn-editar-mobile"
+                                  onClick={() => setPartidoEditandoEquipos(partido)}
+                                >
+                                  Editar equipos
+                                </button>
+                                <button
+                                  type="button"
+                                  className="partido-btn-editar partido-btn-editar-mobile"
+                                  onClick={() => setPartidoEditando(partido)}
+                                >
+                                  Editar resultado
+                                </button>
+                                <button
+                                  type="button"
+                                  className="partido-btn-editar partido-btn-editar-mobile partido-btn-baja"
+                                  onClick={() => handleDarDeBaja(partido)}
+                                  disabled={bajandoPartidoId === partido.id}
+                                >
+                                  {bajandoPartidoId === partido.id ? 'Dando de baja…' : 'Dar de baja'}
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </>
                       ) : (
                         <>
                           <div className="partido-detail-resultado">
