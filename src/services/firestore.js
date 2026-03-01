@@ -1,11 +1,26 @@
-import { collection, getDocs, addDoc, doc, updateDoc } from 'firebase/firestore'
+import { collection, getDocs, addDoc, doc, updateDoc, query, where, limit } from 'firebase/firestore'
 import { db } from '../firebase'
 
 const JUGADORES = 'jugadores'
 const PARTIDOS = 'partidos'
 
 /**
+ * Calcula la edad en años a partir de una fecha de nacimiento (YYYY-MM-DD).
+ */
+function calcularEdad(fechaNacimiento) {
+  if (!fechaNacimiento || typeof fechaNacimiento !== 'string') return null
+  const hoy = new Date()
+  const nacimiento = new Date(fechaNacimiento)
+  if (Number.isNaN(nacimiento.getTime())) return null
+  let edad = hoy.getFullYear() - nacimiento.getFullYear()
+  const m = hoy.getMonth() - nacimiento.getMonth()
+  if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) edad--
+  return edad >= 0 ? edad : null
+}
+
+/**
  * Obtiene todos los jugadores desde Firestore.
+ * El campo "años" se calcula a partir de fechaNacimiento cuando existe.
  * @returns {Promise<Array>} Lista de jugadores con id del documento
  */
 export async function getJugadores() {
@@ -13,12 +28,33 @@ export async function getJugadores() {
   const snap = await getDocs(collection(db, JUGADORES))
   return snap.docs.map((d) => {
     const data = d.data()
+    const añosCalculados = calcularEdad(data.fechaNacimiento)
+    const { años: _omit, ...rest } = data
     return {
       id: d.id,
-      ...data,
+      ...rest,
       admin: data.admin === true,
+      años: añosCalculados ?? 0,
     }
   })
+}
+
+/**
+ * Obtiene el jugador cuyo mail coincide con el email dado (usuario registrado).
+ * @param {string} email
+ * @returns {Promise<{ id: string, equipoFavorito?: string } | null>}
+ */
+export async function getJugadorByEmail(email) {
+  if (!db || !email) return null
+  const q = query(
+    collection(db, JUGADORES),
+    where('mail', '==', email),
+    limit(1)
+  )
+  const snap = await getDocs(q)
+  if (snap.empty) return null
+  const d = snap.docs[0]
+  return { id: d.id, ...d.data() }
 }
 
 /**
@@ -46,7 +82,7 @@ export async function getPartidos() {
  */
 export async function addJugador(jugador) {
   if (!db) throw new Error('Firestore no está configurado')
-  const { id, ...data } = jugador
+  const { id, años: _omit, ...data } = jugador
   const ref = await addDoc(collection(db, JUGADORES), {
     ...data,
     admin: data.admin === true,
@@ -86,4 +122,24 @@ export async function updateJugadorAdmin(jugadorId, admin) {
   if (!db) throw new Error('Firestore no está configurado')
   const ref = doc(db, JUGADORES, jugadorId)
   await updateDoc(ref, { admin: !!admin })
+}
+
+/**
+ * Actualiza el perfil editable de un jugador (apodo, descripcion, posicion, fechaNacimiento, equipoFavorito).
+ * @param {string} jugadorId - ID del documento
+ * @param {Object} data - Campos a actualizar
+ */
+export async function updateJugadorPerfil(jugadorId, data) {
+  if (!db) throw new Error('Firestore no está configurado')
+  const ref = doc(db, JUGADORES, jugadorId)
+  const allowed = ['apodo', 'descripcion', 'posicion', 'fechaNacimiento', 'equipoFavorito']
+  const toUpdate = {}
+  allowed.forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(data, key)) {
+      if (key === 'fechaNacimiento') toUpdate[key] = data[key] || ''
+      else if (key === 'equipoFavorito') toUpdate[key] = data[key] === 'azul' ? 'azul' : 'rojo'
+      else toUpdate[key] = data[key] ?? ''
+    }
+  })
+  if (Object.keys(toUpdate).length) await updateDoc(ref, toUpdate)
 }

@@ -124,6 +124,12 @@ function Jugadores() {
               </div>
               
               <div className="jugador-stats">
+                {typeof jugador.años === 'number' && jugador.años > 0 && (
+                  <div className="stat-item">
+                    <span className="stat-label">Edad:</span>
+                    <span className="stat-value">{jugador.años}</span>
+                  </div>
+                )}
                 <div className="stat-item">
                   <span className="stat-label">Partidos:</span>
                   <span className="stat-value">{jugador.partidos}</span>

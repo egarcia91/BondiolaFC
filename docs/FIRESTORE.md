@@ -13,7 +13,6 @@ Cada documento tiene estos campos:
 | nombre       | string  | "Hernan Zaniratto"         |
 | posicion     | string  | "Delantero", "Defensor", "Mediocampista", "Arquero" |
 | apodo        | string  | "Herni"                    |
-| años         | number  | 0                          |
 | partidos     | number  | 0                          |
 | victorias    | number  | 0                          |
 | goles        | number  | 0                          |
@@ -22,6 +21,10 @@ Cada documento tiene estos campos:
 | mail         | string  | Email del usuario que se registró como este jugador (vacío si no está registrado). |
 | registrado   | boolean | `true` si un usuario con Google vinculó su cuenta a este jugador. |
 | admin        | boolean | `true` si el jugador es administrador de la página. Por defecto `false`. |
+| fechaNacimiento | string | Fecha de nacimiento (YYYY-MM-DD). El usuario la edita en configuración. |
+| equipoFavorito | string | `"rojo"` o `"azul"`. El usuario lo elige en configuración. |
+
+La **edad** no se guarda en la base: se calcula al leer a partir de `fechaNacimiento` y se muestra en la interfaz solo como número.
 
 ### `partidos`
 

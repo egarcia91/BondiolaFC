@@ -4,7 +4,7 @@
   box-sizing: border-box;
 }
 
-/* Modo claro (por defecto) */
+/* Modo claro (por defecto) - equipo azul */
 :root,
 [data-theme="light"] {
   --primary-color: #1e40af;
@@ -21,7 +21,13 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
-/* Modo oscuro */
+/* Modo claro - equipo rojo */
+[data-theme="light"][data-equipo="rojo"] {
+  --primary-color: #b91c1c;
+  --secondary-color: #dc2626;
+}
+
+/* Modo oscuro - equipo azul */
 [data-theme="dark"] {
   --primary-color: #3b82f6;
   --secondary-color: #60a5fa;
@@ -35,6 +41,12 @@
   --border-color: #334155;
   --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+}
+
+/* Modo oscuro - equipo rojo */
+[data-theme="dark"][data-equipo="rojo"] {
+  --primary-color: #dc2626;
+  --secondary-color: #ef4444;
 }
 
 body {
