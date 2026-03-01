@@ -40,9 +40,11 @@ export async function getJugadores() {
     const data = d.data()
     const añosCalculados = calcularEdad(data.fechaNacimiento)
     const { años: _omit, ...rest } = data
+    const elo = typeof data.elo === 'number' && Number.isFinite(data.elo) ? data.elo : 900
     return {
       id: d.id,
       ...rest,
+      elo,
       admin: data.admin === true,
       años: añosCalculados ?? 0,
     }
@@ -365,9 +367,12 @@ export async function darDeBajaPartido(partido, jugadores) {
  * @param {Object} partidoActualizado - Partido con id, equipoLocal { nombre, jugadores, goles, golesAnotadores }, equipoVisitante igual
  * @param {Array} jugadores - Lista actual de jugadores
  */
-export async function aplicarResultadoPartido(partidoActualizado, jugadores) {
+export async function aplicarResultadoPartido(partidoActualizado, jugadoresPasados) {
   if (!partidoActualizado?.id) throw new Error('Partido inválido')
-  const partido = partidoActualizado
+  // Usar siempre jugadores frescos de Firestore para tener elo y datos al día; normalizar partido por si viene con nombres en vez de ids
+  const jugadores = await getJugadores()
+  const partidoNormalizado = normalizePartido(partidoActualizado, jugadores)
+  const partido = partidoNormalizado
   const golesLocal = partido.equipoLocal?.goles ?? 0
   const golesVisitante = partido.equipoVisitante?.goles ?? 0
   const nombreLocal = partido.equipoLocal?.nombre || 'Rojo'
@@ -610,6 +615,48 @@ export function computeEloUpdatesForPartido(partido, ganador, jugadores) {
         victorias: j.victorias ?? 0,
         partidosEmpatados: (j.partidosEmpatados ?? 0) + 1,
         partidosPerdidos: j.partidosPerdidos ?? 0,
+        eloHistorial: buildEloHistorial(j, newElo),
+      })
+    })
+    return { updates, eloDeltasLocal, eloDeltasVisitante }
+  }
+
+  // Mismo Elo en ambos equipos: ganadores +20, perdedores -20
+  const DELTA_ELO_EMPATE_PROMEDIO = 20
+  if (diff === 0) {
+    const deltaRojo = ganadorEsLocal ? DELTA_ELO_EMPATE_PROMEDIO : -DELTA_ELO_EMPATE_PROMEDIO
+    const deltaAzul = ganadorEsLocal ? -DELTA_ELO_EMPATE_PROMEDIO : DELTA_ELO_EMPATE_PROMEDIO
+    listaRojo.forEach((entrada) => {
+      const j = getJugadorFromEntrada(entrada)
+      eloDeltasLocal.push(j ? deltaRojo : 0)
+      if (!j) return
+      const newElo = Math.max(0, (j.elo ?? 900) + deltaRojo)
+      const newEloR = Math.round(newElo)
+      const win = ganadorEsLocal
+      updates.push({
+        id: j.id,
+        newElo: newEloR,
+        partidos: (j.partidos ?? 0) + 1,
+        victorias: (j.victorias ?? 0) + (win ? 1 : 0),
+        partidosEmpatados: j.partidosEmpatados ?? 0,
+        partidosPerdidos: (j.partidosPerdidos ?? 0) + (win ? 0 : 1),
+        eloHistorial: buildEloHistorial(j, newElo),
+      })
+    })
+    listaAzul.forEach((entrada) => {
+      const j = getJugadorFromEntrada(entrada)
+      eloDeltasVisitante.push(j ? deltaAzul : 0)
+      if (!j) return
+      const newElo = Math.max(0, (j.elo ?? 900) + deltaAzul)
+      const newEloR = Math.round(newElo)
+      const win = !ganadorEsLocal
+      updates.push({
+        id: j.id,
+        newElo: newEloR,
+        partidos: (j.partidos ?? 0) + 1,
+        victorias: (j.victorias ?? 0) + (win ? 1 : 0),
+        partidosEmpatados: j.partidosEmpatados ?? 0,
+        partidosPerdidos: (j.partidosPerdidos ?? 0) + (win ? 0 : 1),
         eloHistorial: buildEloHistorial(j, newElo),
       })
     })
