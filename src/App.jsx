@@ -15,6 +15,8 @@ function App() {
   const [activeSection, setActiveSection] = useState('jugadores')
   const [showRegistroModal, setShowRegistroModal] = useState(false)
   const [showConfigModal, setShowConfigModal] = useState(false)
+  const [yaRegistrado, setYaRegistrado] = useState(null)
+  const [jugadorActual, setJugadorActual] = useState(null) // jugador vinculado al usuario (Google)
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem(THEME_KEY)
     if (saved) return saved === 'dark'
@@ -41,14 +43,27 @@ function App() {
     getJugadorByEmail(user.email)
       .then((jugador) => {
         if (cancelled) return
+        setJugadorActual(jugador || null)
+        setYaRegistrado(!!jugador)
         const equipo = jugador?.equipoFavorito === 'rojo' ? 'rojo' : 'azul'
         document.documentElement.setAttribute('data-equipo', equipo)
       })
       .catch(() => {
-        if (!cancelled) document.documentElement.setAttribute('data-equipo', 'azul')
+        if (!cancelled) {
+          setJugadorActual(null)
+          setYaRegistrado(false)
+          document.documentElement.setAttribute('data-equipo', 'azul')
+        }
       })
     return () => { cancelled = true }
   }, [isAuthenticated, user?.type, user?.email])
+
+  useEffect(() => {
+    if (!isAuthenticated || user?.type !== 'google') {
+      setYaRegistrado(null)
+      setJugadorActual(null)
+    }
+  }, [isAuthenticated, user?.type])
 
   if (loading) {
     return (
@@ -66,21 +81,23 @@ function App() {
     <div className="app">
       <header className="app-header">
         <div className="app-header-content">
-          <div>
+          <div className="app-header-title">
             <h1><span className="header-ball" aria-hidden="true">⚽</span> Bondiola FC</h1>
             <p className="subtitle">Futbol en dos cómodas cuotas</p>
           </div>
           <div className="app-header-actions">
             {user?.type === 'google' && (
               <>
-                <button
-                  type="button"
-                  className="app-registro-btn"
-                  onClick={() => setShowRegistroModal(true)}
-                  title="Registrarme como jugador"
-                >
-                  Mi jugador
-                </button>
+                {yaRegistrado === false && (
+                  <button
+                    type="button"
+                    className="app-registro-btn"
+                    onClick={() => setShowRegistroModal(true)}
+                    title="Registrarme como jugador"
+                  >
+                    Mi jugador
+                  </button>
+                )}
                 <button
                   type="button"
                   className="app-icon-btn"
@@ -92,17 +109,19 @@ function App() {
                 </button>
               </>
             )}
-            <span className="app-user-badge">
-              {user?.type === 'guest' ? 'Invitado' : user?.email}
+            <span className="app-user-badge" title={user?.type === 'google' && jugadorActual ? user?.email : undefined}>
+              {user?.type === 'guest' ? 'Invitado' : (jugadorActual?.apodo || user?.email)}
             </span>
-            <button
-              type="button"
-              className="app-logout"
-              onClick={signOut}
-              title="Cerrar sesión"
-            >
-              Salir
-            </button>
+            {user?.type === 'guest' && (
+              <button
+                type="button"
+                className="app-registro-btn"
+                onClick={signOut}
+                title="Iniciar sesión con Google"
+              >
+                Login
+              </button>
+            )}
             <button
             type="button"
             className="theme-toggle"
@@ -141,7 +160,11 @@ function App() {
           userEmail={user.email}
           userDisplayName={user.displayName || ''}
           onClose={() => setShowRegistroModal(false)}
-          onRegistered={() => setShowRegistroModal(false)}
+          onRegistered={() => {
+            setShowRegistroModal(false)
+            setYaRegistrado(true)
+            getJugadorByEmail(user.email).then((j) => setJugadorActual(j || null))
+          }}
         />
       )}
 
@@ -152,6 +175,11 @@ function App() {
           onSaved={(equipo) => {
             setShowConfigModal(false)
             if (equipo) document.documentElement.setAttribute('data-equipo', equipo)
+            getJugadorByEmail(user.email).then((j) => setJugadorActual(j || null))
+          }}
+          onCerrarSesion={() => {
+            setShowConfigModal(false)
+            signOut()
           }}
         />
       )}

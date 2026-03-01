@@ -123,3 +123,24 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.config-btn-outline {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.config-btn-outline:hover {
+  background: var(--bg-color);
+  color: var(--text-primary);
+}
+
+.config-btn-full {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.config-actions-single {
+  flex-direction: column;
+  gap: 0.5rem;
+}

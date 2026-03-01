@@ -8,7 +8,7 @@ const EQUIPOS = [
   { value: 'azul', label: 'Azul' },
 ]
 
-function ConfigJugador({ userEmail, onClose, onSaved }) {
+function ConfigJugador({ userEmail, onClose, onSaved, onCerrarSesion }) {
   const [jugadores, setJugadores] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -82,9 +82,16 @@ function ConfigJugador({ userEmail, onClose, onSaved }) {
             </button>
           </div>
           <p className="config-sin-registro">Primero registrate como jugador en &quot;Mi jugador&quot; para poder configurar tu perfil.</p>
-          <button type="button" className="config-btn" onClick={onClose}>
-            Cerrar
-          </button>
+          <div className="config-actions config-actions-single">
+            <button type="button" className="config-btn" onClick={onClose}>
+              Cerrar
+            </button>
+            {onCerrarSesion && (
+              <button type="button" className="config-btn config-btn-outline" onClick={onCerrarSesion}>
+                Cerrar sesión
+              </button>
+            )}
+          </div>
         </div>
       </div>
     )
@@ -170,6 +177,11 @@ function ConfigJugador({ userEmail, onClose, onSaved }) {
               {saving ? 'Guardando…' : 'Guardar'}
             </button>
           </div>
+          {onCerrarSesion && (
+            <button type="button" className="config-btn config-btn-outline config-btn-full" onClick={onCerrarSesion}>
+              Cerrar sesión
+            </button>
+          )}
         </form>
       </div>
     </div>

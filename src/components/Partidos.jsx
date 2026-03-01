@@ -24,8 +24,18 @@ function Partidos() {
     return () => { cancelled = true }
   }, [])
 
+  // Parsea YYYY-MM-DD como fecha local (evita desfase por UTC)
+  const parseFechaLocal = (fechaStr, horaStr = '00:00') => {
+    if (!fechaStr) return null
+    const [y, m, d] = fechaStr.split('-').map(Number)
+    if (!y || !m || !d) return null
+    const [h = 0, min = 0] = (horaStr || '00:00').toString().split(':').map(Number)
+    return new Date(y, m - 1, d, h, min)
+  }
+
   const formatFecha = (fecha) => {
-    const date = new Date(fecha)
+    const date = parseFechaLocal(fecha)
+    if (!date || Number.isNaN(date.getTime())) return fecha
     return date.toLocaleDateString('es-ES', {
       weekday: 'long',
       year: 'numeric',
@@ -36,8 +46,8 @@ function Partidos() {
 
   const isPartidoFuturo = (fecha, hora) => {
     const ahora = new Date()
-    const fechaPartido = new Date(fecha + ' ' + hora)
-    return fechaPartido > ahora
+    const fechaPartido = parseFechaLocal(fecha, hora)
+    return fechaPartido ? fechaPartido > ahora : false
   }
 
   if (loading) {

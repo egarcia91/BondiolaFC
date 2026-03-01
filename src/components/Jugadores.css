@@ -73,6 +73,11 @@
   color: white;
 }
 
+.controles-label-select,
+.controles-orden-select {
+  display: none;
+}
+
 .empty-state {
   text-align: center;
   padding: 3rem;
@@ -88,6 +93,11 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.5rem;
+}
+
+/* Vista móvil: listado compacto (oculto en desktop) */
+.jugadores-list-mobile {
+  display: none;
 }
 
 .jugador-card {
@@ -185,28 +195,147 @@
   line-height: 1.6;
 }
 
+.jugador-edad {
+  margin-bottom: 0.5rem;
+}
+
 @media (max-width: 768px) {
   .jugadores-controles {
-    flex-direction: column;
-    align-items: stretch;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    margin-bottom: 1.25rem;
   }
 
   .jugadores-filtro,
   .jugadores-orden {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    gap: 0.35rem;
+  }
+
+  .controles-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .controles-label-buttons {
+    display: none;
+  }
+
+  .controles-label-select,
+  .controles-orden-select {
+    display: block;
+  }
+
+  .controles-orden-buttons {
+    display: none;
   }
 
   .controles-select {
     width: 100%;
     min-width: 0;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.85rem;
   }
 
   .jugadores-grid {
-    grid-template-columns: 1fr;
+    display: none;
   }
-  
-  .jugador-stats {
-    grid-template-columns: 1fr;
+
+  .jugadores-list-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .jugador-list-item {
+    background-color: var(--card-bg);
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+  }
+
+  .jugador-list-item-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.9rem 1rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+  }
+
+  .jugador-list-item-header:active {
+    background-color: var(--bg-color);
+  }
+
+  .jugador-list-apodo {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--text-primary);
+    flex: 1;
+  }
+
+  .jugador-list-partidos {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+  }
+
+  .jugador-list-chevron {
+    font-size: 1.25rem;
+    color: var(--text-secondary);
+    transition: transform 0.2s ease;
+    line-height: 1;
+  }
+
+  .jugador-list-item.expandido .jugador-list-chevron {
+    transform: rotate(90deg);
+  }
+
+  .jugador-list-item-detail {
+    padding: 0 1rem 1rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+    margin-top: 0;
+  }
+
+  .jugador-list-item-detail .jugador-list-nombre {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+  }
+
+  .jugador-list-item-detail .jugador-posicion {
+    display: inline-block;
+    margin-bottom: 0.75rem;
+  }
+
+  .jugador-list-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+  }
+
+  .jugador-list-stats p {
+    margin: 0;
+  }
+
+  .jugador-list-item-detail .jugador-descripcion {
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+    margin-top: 0.75rem;
+  }
+
+  .jugador-list-item-detail .jugador-descripcion p {
+    font-size: 0.9rem;
+    margin: 0;
   }
 }
