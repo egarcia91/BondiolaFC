@@ -103,6 +103,17 @@ export async function addPartido(partido) {
 }
 
 /**
+ * Actualiza campos de un partido (ej. concluido, goles, ganador).
+ * @param {string} partidoId - ID del documento del partido
+ * @param {Object} data - Campos a actualizar (concluido, equipoLocal, equipoVisitante, ganador, etc.)
+ */
+export async function updatePartido(partidoId, data) {
+  if (!db) throw new Error('Firestore no está configurado')
+  const ref = doc(db, PARTIDOS, partidoId)
+  await updateDoc(ref, data)
+}
+
+/**
  * Actualiza el registro de un jugador (mail y registrado).
  * @param {string} jugadorId - ID del documento del jugador
  * @param {{ mail: string, registrado: boolean }} data

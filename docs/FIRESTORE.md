@@ -35,6 +35,7 @@ Cada documento tiene estos campos:
 | fecha              | string | "2026-02-26" |
 | hora               | string | "21:00"     |
 | lugar              | string | "Por definir" |
+| concluido          | boolean | `true` si el partido ya se jugó y tiene resultado; `false` por defecto si aún no ocurrió. |
 | equipoLocal        | map    | Ver abajo   |
 | equipoVisitante    | map    | Ver abajo   |
 | ganador            | string | "Empate" o nombre del equipo ganador |

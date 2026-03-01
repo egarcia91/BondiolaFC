@@ -2,6 +2,35 @@
   width: 100%;
 }
 
+.partidos-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.partidos-btn-nuevo {
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--primary-color);
+  color: white;
+}
+
+.partidos-btn-nuevo:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.partidos-btn-nuevo:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .partidos-error {
   text-align: center;
   padding: 3rem;
@@ -95,6 +124,17 @@
   gap: 1rem;
 }
 
+.partido-resultado-futuro {
+  justify-content: center;
+}
+
+.partido-aun-no {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
 .equipo-info {
   flex: 1;
   display: flex;
@@ -173,6 +213,32 @@
   border-radius: 6px;
   color: var(--text-secondary);
   font-size: 0.9rem;
+}
+
+.partido-card-actions {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.partido-btn-editar {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.partido-btn-editar:hover {
+  background: var(--border-color);
+}
+
+.partido-btn-editar-mobile {
+  width: 100%;
+  margin-top: 1rem;
 }
 
 /* Vista móvil: ocultar lista desktop, mostrar lista compacta */
@@ -284,6 +350,11 @@
   margin-bottom: 1rem;
   background-color: var(--bg-color);
   border-radius: 8px;
+}
+
+.partido-detail-resultado.partido-resultado-futuro {
+  display: flex;
+  justify-content: center;
 }
 
 .partido-detail-equipo {

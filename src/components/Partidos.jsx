@@ -1,20 +1,48 @@
-import { useState, useEffect } from 'react'
-import { getPartidos } from '../services/firestore'
+import { useState, useEffect, useMemo } from 'react'
+import { getPartidos, getJugadores } from '../services/firestore'
+import NuevoPartidoModal from './NuevoPartidoModal'
+import EditarPartidoModal from './EditarPartidoModal'
 import './Partidos.css'
 
-function Partidos() {
+function Partidos({ isAdmin }) {
   const [partidos, setPartidos] = useState([])
+  const [jugadores, setJugadores] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [expandidoId, setExpandidoId] = useState(null)
+  const [showNuevoPartidoModal, setShowNuevoPartidoModal] = useState(false)
+  const [partidoEditando, setPartidoEditando] = useState(null)
+
+  const apodosRegistrados = useMemo(() => {
+    const set = new Set()
+    jugadores.forEach((j) => {
+      const apodo = (j.apodo || '').trim()
+      if (apodo) set.add(apodo.toLowerCase())
+    })
+    return set
+  }, [jugadores])
+
+  const displayJugador = (nombre) => {
+    const n = (nombre || '').trim()
+    if (!n) return 'invitado'
+    if (apodosRegistrados.has(n.toLowerCase())) return n
+    return `invitado (${n})`
+  }
+
+  const refreshPartidos = () => {
+    getPartidos().then(setPartidos).catch(() => {})
+  }
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     setError(null)
-    getPartidos()
-      .then((data) => {
-        if (!cancelled) setPartidos(data)
+    Promise.all([getPartidos(), getJugadores()])
+      .then(([partidosData, jugadoresData]) => {
+        if (!cancelled) {
+          setPartidos(partidosData)
+          setJugadores(jugadoresData)
+        }
       })
       .catch((err) => {
         if (!cancelled) setError(err.message || 'Error al cargar partidos')
@@ -70,7 +98,14 @@ function Partidos() {
   if (loading) {
     return (
       <div className="partidos-container">
-        <h2 className="section-title">Partidos</h2>
+        <div className="partidos-header">
+          <h2 className="section-title">Partidos</h2>
+          {isAdmin && (
+            <button type="button" className="partidos-btn-nuevo" onClick={() => setShowNuevoPartidoModal(true)} disabled>
+              Nuevo partido
+            </button>
+          )}
+        </div>
         <p className="empty-state">Cargando partidos…</p>
       </div>
     )
@@ -79,7 +114,14 @@ function Partidos() {
   if (error) {
     return (
       <div className="partidos-container">
-        <h2 className="section-title">Partidos</h2>
+        <div className="partidos-header">
+          <h2 className="section-title">Partidos</h2>
+          {isAdmin && (
+            <button type="button" className="partidos-btn-nuevo" onClick={() => setShowNuevoPartidoModal(true)} disabled>
+              Nuevo partido
+            </button>
+          )}
+        </div>
         <p className="empty-state partidos-error">{error}</p>
       </div>
     )
@@ -87,7 +129,29 @@ function Partidos() {
 
   return (
     <div className="partidos-container">
-      <h2 className="section-title">Partidos</h2>
+      <div className="partidos-header">
+        <h2 className="section-title">Partidos</h2>
+        {isAdmin && (
+          <button type="button" className="partidos-btn-nuevo" onClick={() => setShowNuevoPartidoModal(true)}>
+            Nuevo partido
+          </button>
+        )}
+      </div>
+
+      {showNuevoPartidoModal && (
+        <NuevoPartidoModal
+          onClose={() => setShowNuevoPartidoModal(false)}
+          onPartidoCreado={refreshPartidos}
+        />
+      )}
+
+      {partidoEditando && (
+        <EditarPartidoModal
+          partido={partidoEditando}
+          onClose={() => setPartidoEditando(null)}
+          onSaved={refreshPartidos}
+        />
+      )}
       
       {partidos.length === 0 ? (
         <p className="empty-state">No hay partidos registrados</p>
@@ -97,6 +161,8 @@ function Partidos() {
           <div className="partidos-list partidos-list-desktop">
             {partidos.map((partido) => {
               const esFuturo = isPartidoFuturo(partido.fecha, partido.hora)
+              const concluido = partido.concluido === true
+              const aunNoOcurrio = !concluido && (partido.concluido === false || esFuturo)
               const esEmpate = partido.ganador === 'Empate'
 
               return (
@@ -113,32 +179,40 @@ function Partidos() {
                     {esFuturo && <span className="badge-futuro">Próximo</span>}
                   </div>
 
-                  <div className="partido-resultado">
-                    <div className="equipo-info">
-                      <div className="equipo-nombre equipo-local">
-                        Rojo
-                        {!esFuturo && !esEmpate && partido.ganador === partido.equipoLocal?.nombre && (
-                          <span className="badge-ganador">🏆</span>
-                        )}
-                      </div>
-                      <div className="equipo-goles">{partido.equipoLocal?.goles ?? 0}</div>
+                  {aunNoOcurrio ? (
+                    <div className="partido-resultado partido-resultado-futuro">
+                      <span className="partido-aun-no">Aún no ocurrió</span>
                     </div>
+                  ) : (
+                    <>
+                      <div className="partido-resultado">
+                        <div className="equipo-info">
+                          <div className="equipo-nombre equipo-local">
+                            Rojo
+                            {!esEmpate && partido.ganador === partido.equipoLocal?.nombre && (
+                              <span className="badge-ganador">🏆</span>
+                            )}
+                          </div>
+                          <div className="equipo-goles">{partido.equipoLocal?.goles ?? 0}</div>
+                        </div>
 
-                    <div className="vs-separator">VS</div>
+                        <div className="vs-separator">VS</div>
 
-                    <div className="equipo-info">
-                      <div className="equipo-nombre equipo-visitante">
-                        Azul
-                        {!esFuturo && !esEmpate && partido.ganador === partido.equipoVisitante?.nombre && (
-                          <span className="badge-ganador">🏆</span>
-                        )}
+                        <div className="equipo-info">
+                          <div className="equipo-nombre equipo-visitante">
+                            Azul
+                            {!esEmpate && partido.ganador === partido.equipoVisitante?.nombre && (
+                              <span className="badge-ganador">🏆</span>
+                            )}
+                          </div>
+                          <div className="equipo-goles">{partido.equipoVisitante?.goles ?? 0}</div>
+                        </div>
                       </div>
-                      <div className="equipo-goles">{partido.equipoVisitante?.goles ?? 0}</div>
-                    </div>
-                  </div>
 
-                  {esEmpate && !esFuturo && (
-                    <div className="resultado-empate">Empate</div>
+                      {esEmpate && (
+                        <div className="resultado-empate">Empate</div>
+                      )}
+                    </>
                   )}
 
                   <div className="partido-jugadores">
@@ -146,7 +220,7 @@ function Partidos() {
                       <h4 className="jugadores-titulo">Rojo</h4>
                       <ul className="jugadores-lista">
                         {(partido.equipoLocal?.jugadores ?? []).map((jugador, idx) => (
-                          <li key={idx}>{jugador}</li>
+                          <li key={idx}>{displayJugador(jugador)}</li>
                         ))}
                       </ul>
                     </div>
@@ -154,11 +228,22 @@ function Partidos() {
                       <h4 className="jugadores-titulo">Azul</h4>
                       <ul className="jugadores-lista">
                         {(partido.equipoVisitante?.jugadores ?? []).map((jugador, idx) => (
-                          <li key={idx}>{jugador}</li>
+                          <li key={idx}>{displayJugador(jugador)}</li>
                         ))}
                       </ul>
                     </div>
                   </div>
+                  {isAdmin && (
+                    <div className="partido-card-actions">
+                      <button
+                        type="button"
+                        className="partido-btn-editar"
+                        onClick={() => setPartidoEditando(partido)}
+                      >
+                        Editar resultado
+                      </button>
+                    </div>
+                  )}
                 </div>
               )
             })}
@@ -168,6 +253,8 @@ function Partidos() {
           <div className="partidos-list-mobile">
             {partidos.map((partido) => {
               const esFuturo = isPartidoFuturo(partido.fecha, partido.hora)
+              const concluido = partido.concluido === true
+              const aunNoOcurrio = !concluido && (partido.concluido === false || esFuturo)
               const esEmpate = partido.ganador === 'Empate'
               const expandido = expandidoId === partido.id
 
@@ -183,7 +270,9 @@ function Partidos() {
                     aria-expanded={expandido}
                   >
                     <span className="partido-list-fecha">{formatFechaShort(partido.fecha)}</span>
-                    <span className="partido-list-resultado">{resultadoTexto(partido)}</span>
+                    <span className="partido-list-resultado">
+                      {aunNoOcurrio ? 'Aún no ocurrió' : resultadoTexto(partido)}
+                    </span>
                     <span className="partido-list-chevron" aria-hidden>›</span>
                   </button>
                   {expandido && (
@@ -206,34 +295,50 @@ function Partidos() {
                         {esFuturo && <span className="badge-futuro">Próximo</span>}
                       </div>
 
-                      <div className="partido-detail-resultado">
-                        <div className="partido-detail-equipo">
-                          <span className="partido-detail-equipo-nombre">Rojo</span>
-                          <span className="partido-detail-goles">{partido.equipoLocal?.goles ?? 0}</span>
+                      {aunNoOcurrio ? (
+                        <div className="partido-detail-resultado partido-resultado-futuro">
+                          <span className="partido-aun-no">Aún no ocurrió</span>
                         </div>
-                        <div className="partido-detail-vs">VS</div>
-                        <div className="partido-detail-equipo">
-                          <span className="partido-detail-equipo-nombre">Azul</span>
-                          <span className="partido-detail-goles">{partido.equipoVisitante?.goles ?? 0}</span>
-                        </div>
-                      </div>
-
-                      {esEmpate && !esFuturo && (
-                        <div className="resultado-empate partido-detail-empate">Empate</div>
+                      ) : (
+                        <>
+                          <div className="partido-detail-resultado">
+                            <div className="partido-detail-equipo">
+                              <span className="partido-detail-equipo-nombre">Rojo</span>
+                              <span className="partido-detail-goles">{partido.equipoLocal?.goles ?? 0}</span>
+                            </div>
+                            <div className="partido-detail-vs">VS</div>
+                            <div className="partido-detail-equipo">
+                              <span className="partido-detail-equipo-nombre">Azul</span>
+                              <span className="partido-detail-goles">{partido.equipoVisitante?.goles ?? 0}</span>
+                            </div>
+                          </div>
+                          {esEmpate && (
+                            <div className="resultado-empate partido-detail-empate">Empate</div>
+                          )}
+                        </>
                       )}
 
                       <div className="partido-detail-jugadores">
                         <ul className="jugadores-lista">
                           {(partido.equipoLocal?.jugadores ?? []).map((jugador, idx) => (
-                            <li key={idx}>{jugador}</li>
+                            <li key={idx}>{displayJugador(jugador)}</li>
                           ))}
                         </ul>
                         <ul className="jugadores-lista">
                           {(partido.equipoVisitante?.jugadores ?? []).map((jugador, idx) => (
-                            <li key={idx}>{jugador}</li>
+                            <li key={idx}>{displayJugador(jugador)}</li>
                           ))}
                         </ul>
                       </div>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          className="partido-btn-editar partido-btn-editar-mobile"
+                          onClick={() => setPartidoEditando(partido)}
+                        >
+                          Editar resultado
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

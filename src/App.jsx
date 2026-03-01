@@ -151,7 +151,7 @@ function App() {
 
       <main className="app-main">
         {activeSection === 'jugadores' && <Jugadores />}
-        {activeSection === 'partidos' && <Partidos />}
+        {activeSection === 'partidos' && <Partidos isAdmin={jugadorActual?.admin === true} />}
       </main>
 
       {showRegistroModal && user?.type === 'google' && (
