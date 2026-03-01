@@ -15,8 +15,11 @@ Cada documento tiene estos campos:
 | apodo        | string  | "Herni"                    |
 | partidos     | number  | 0                          |
 | victorias    | number  | 0                          |
+| partidosEmpatados | number | 0                    |
+| partidosPerdidos  | number | 0                    |
 | goles        | number  | 0                          |
 | elo          | number  | 900                        |
+| eloHistorial | array   | [] — historial de Elo por partido, ej. [900, 908, 905] |
 | descripcion  | string  | ""                         |
 | mail         | string  | Email del usuario que se registró como este jugador (vacío si no está registrado). |
 | registrado   | boolean | `true` si un usuario con Google vinculó su cuenta a este jugador. |
@@ -36,15 +39,19 @@ Cada documento tiene estos campos:
 | hora               | string | "21:00"     |
 | lugar              | string | "Por definir" |
 | concluido          | boolean | `true` si el partido ya se jugó y tiene resultado; `false` por defecto si aún no ocurrió. |
+| estadisticasAplicadas | boolean | `true` cuando ya se actualizaron partidos/victorias/elo de los jugadores; evita duplicar al re-editar. |
 | equipoLocal        | map    | Ver abajo   |
 | equipoVisitante    | map    | Ver abajo   |
 | ganador            | string | "Empate" o nombre del equipo ganador |
 
 **equipoLocal / equipoVisitante** (mapas):
 
-- `nombre` (string): ej. "Bondiola FC"
-- `jugadores` (array de strings): apodos, ej. `["Chino", "Cris", "Eze"]`
+- `nombre` (string): ej. "Rojo", "Azul"
+- `jugadores` (array de objetos): cada elemento es `{ id?: string, nombre?: string }`. Si el jugador está registrado se guarda `{ id: "<docId del jugador>" }`; si es invitado, `{ nombre: "Nombre" }`. Así, si un usuario cambia su apodo, el partido sigue reconociendo al jugador por ID.
 - `goles` (number)
+- `golesAnotadores` (array de strings, opcional): un elemento por gol; cada valor es el **ID** del jugador anotador, o `"__general__"` para "Anotador general", o `"guest:Nombre"` para invitados. Ej. `["<idChino>", "__general__", "<idCris>"]`.
+
+La app normaliza partidos antiguos (donde `jugadores` o `golesAnotadores` eran nombres/apodos) al cargar, resolviendo nombres a IDs cuando hay coincidencia con la colección `jugadores`.
 
 ## Cómo cargar datos
 

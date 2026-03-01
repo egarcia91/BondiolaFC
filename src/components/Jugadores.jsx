@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { getJugadores, getPartidos } from '../services/firestore'
+import { getJugadores, getPartidos, normalizePartidos } from '../services/firestore'
 import './Jugadores.css'
 
 const POSICIONES = ['Delantero', 'Defensor', 'Mediocampista', 'Arquero']
@@ -33,6 +33,11 @@ function Jugadores() {
     return () => { cancelled = true }
   }, [])
 
+  const partidosNormalized = useMemo(
+    () => normalizePartidos(partidos, jugadores),
+    [partidos, jugadores]
+  )
+
   const jugadoresFiltradosYOrdenados = useMemo(() => {
     let lista = [...jugadores]
     if (filtroPosicion) {
@@ -42,22 +47,24 @@ function Jugadores() {
       lista.sort((a, b) => b.partidos - a.partidos)
     } else if (ordenPor === 'goles') {
       lista.sort((a, b) => b.goles - a.goles)
-    } else if (ordenPor === 'presentes' && partidos.length > 0) {
-      const ultimo = partidos[0]
+    } else if (ordenPor === 'ranking') {
+      lista.sort((a, b) => (b.elo ?? 900) - (a.elo ?? 900))
+    } else if (ordenPor === 'presentes' && partidosNormalized.length > 0) {
+      const ultimo = partidosNormalized[0]
       const presentes = new Set([
-        ...(ultimo.equipoLocal?.jugadores ?? []),
-        ...(ultimo.equipoVisitante?.jugadores ?? [])
+        ...(ultimo.equipoLocal?.jugadores ?? []).map((e) => e?.id).filter(Boolean),
+        ...(ultimo.equipoVisitante?.jugadores ?? []).map((e) => e?.id).filter(Boolean),
       ])
       lista.sort((a, b) => {
-        const aJugo = presentes.has(a.apodo) || presentes.has(a.nombre)
-        const bJugo = presentes.has(b.apodo) || presentes.has(b.nombre)
+        const aJugo = presentes.has(a.id)
+        const bJugo = presentes.has(b.id)
         if (aJugo && !bJugo) return -1
         if (!aJugo && bJugo) return 1
         return b.partidos - a.partidos
       })
     }
     return lista
-  }, [jugadores, partidos, filtroPosicion, ordenPor])
+  }, [jugadores, partidosNormalized, filtroPosicion, ordenPor])
 
   if (loading) {
     return (
@@ -116,6 +123,13 @@ function Jugadores() {
               </button>
               <button
                 type="button"
+                className={`controles-btn ${ordenPor === 'ranking' ? 'active' : ''}`}
+                onClick={() => setOrdenPor(ordenPor === 'ranking' ? null : 'ranking')}
+              >
+                Ranking
+              </button>
+              <button
+                type="button"
                 className={`controles-btn ${ordenPor === 'presentes' ? 'active' : ''}`}
                 onClick={() => setOrdenPor(ordenPor === 'presentes' ? null : 'presentes')}
               >
@@ -134,6 +148,7 @@ function Jugadores() {
               <option value="">—</option>
               <option value="partidos">Más partidos</option>
               <option value="goles">Más goles</option>
+              <option value="ranking">Ranking</option>
               <option value="presentes">Últimos partidos</option>
             </select>
           </div>

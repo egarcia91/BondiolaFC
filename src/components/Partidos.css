@@ -125,7 +125,10 @@
 }
 
 .partido-resultado-futuro {
+  flex-direction: column;
   justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .partido-aun-no {
@@ -133,6 +136,17 @@
   font-weight: 600;
   color: var(--text-secondary);
   font-style: italic;
+}
+
+.partido-elo-promedio-futuro {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
 .equipo-info {
@@ -156,6 +170,12 @@
   font-size: 3rem;
   font-weight: 800;
   color: var(--primary-color);
+}
+
+.equipo-elo-promedio {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
 .vs-separator {
@@ -213,6 +233,35 @@
   border-radius: 6px;
   color: var(--text-secondary);
   font-size: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.partido-jugador-elo-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.partido-jugador-elo {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.partido-elo-delta {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.partido-elo-delta-positivo {
+  color: var(--success-color);
+}
+
+.partido-elo-delta-negativo {
+  color: var(--danger-color);
 }
 
 .partido-card-actions {
@@ -354,7 +403,10 @@
 
 .partido-detail-resultado.partido-resultado-futuro {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
+  gap: 0.5rem;
 }
 
 .partido-detail-equipo {
@@ -374,6 +426,12 @@
   font-size: 1.5rem;
   font-weight: 800;
   color: var(--primary-color);
+}
+
+.partido-detail-elo-prom {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
 .partido-detail-vs {

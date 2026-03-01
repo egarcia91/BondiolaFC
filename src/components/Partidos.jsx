@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { getPartidos, getJugadores } from '../services/firestore'
+import { getPartidos, getJugadores, normalizePartidos } from '../services/firestore'
 import NuevoPartidoModal from './NuevoPartidoModal'
 import EditarPartidoModal from './EditarPartidoModal'
 import './Partidos.css'
@@ -13,20 +13,38 @@ function Partidos({ isAdmin }) {
   const [showNuevoPartidoModal, setShowNuevoPartidoModal] = useState(false)
   const [partidoEditando, setPartidoEditando] = useState(null)
 
-  const apodosRegistrados = useMemo(() => {
-    const set = new Set()
-    jugadores.forEach((j) => {
-      const apodo = (j.apodo || '').trim()
-      if (apodo) set.add(apodo.toLowerCase())
-    })
-    return set
-  }, [jugadores])
+  const partidosNormalized = useMemo(
+    () => normalizePartidos(partidos, jugadores),
+    [partidos, jugadores]
+  )
 
-  const displayJugador = (nombre) => {
-    const n = (nombre || '').trim()
-    if (!n) return 'invitado'
-    if (apodosRegistrados.has(n.toLowerCase())) return n
-    return `invitado (${n})`
+  const jugadoresById = useMemo(
+    () => new Map(jugadores.map((j) => [j.id, j])),
+    [jugadores]
+  )
+
+  const getElo = (entrada) => {
+    if (!entrada) return 900
+    if (entrada.id) {
+      const j = jugadoresById.get(entrada.id)
+      return j != null && typeof j.elo === 'number' ? j.elo : 900
+    }
+    return 900
+  }
+
+  const getEloPromedio = (lista) => {
+    if (!lista || lista.length === 0) return 0
+    const sum = lista.reduce((acc, entrada) => acc + getElo(entrada), 0)
+    return Math.round(sum / lista.length)
+  }
+
+  const displayJugador = (entrada) => {
+    if (!entrada) return 'invitado'
+    if (entrada.id) {
+      const j = jugadoresById.get(entrada.id)
+      return (j && (j.apodo || j.nombre)) || entrada.nombre || 'invitado'
+    }
+    return entrada.nombre ? `invitado (${entrada.nombre})` : 'invitado'
   }
 
   const refreshPartidos = () => {
@@ -148,18 +166,19 @@ function Partidos({ isAdmin }) {
       {partidoEditando && (
         <EditarPartidoModal
           partido={partidoEditando}
+          jugadores={jugadores}
           onClose={() => setPartidoEditando(null)}
           onSaved={refreshPartidos}
         />
       )}
       
-      {partidos.length === 0 ? (
+      {partidosNormalized.length === 0 ? (
         <p className="empty-state">No hay partidos registrados</p>
       ) : (
         <>
           {/* Vista desktop: tarjetas completas */}
           <div className="partidos-list partidos-list-desktop">
-            {partidos.map((partido) => {
+            {partidosNormalized.map((partido) => {
               const esFuturo = isPartidoFuturo(partido.fecha, partido.hora)
               const concluido = partido.concluido === true
               const aunNoOcurrio = !concluido && (partido.concluido === false || esFuturo)
@@ -182,6 +201,10 @@ function Partidos({ isAdmin }) {
                   {aunNoOcurrio ? (
                     <div className="partido-resultado partido-resultado-futuro">
                       <span className="partido-aun-no">Aún no ocurrió</span>
+                      <div className="partido-elo-promedio-futuro">
+                        <span>Elo prom. Rojo: {getEloPromedio(partido.equipoLocal?.jugadores)}</span>
+                        <span>Elo prom. Azul: {getEloPromedio(partido.equipoVisitante?.jugadores)}</span>
+                      </div>
                     </div>
                   ) : (
                     <>
@@ -194,6 +217,7 @@ function Partidos({ isAdmin }) {
                             )}
                           </div>
                           <div className="equipo-goles">{partido.equipoLocal?.goles ?? 0}</div>
+                          <div className="equipo-elo-promedio">Elo prom. {getEloPromedio(partido.equipoLocal?.jugadores)}</div>
                         </div>
 
                         <div className="vs-separator">VS</div>
@@ -206,6 +230,7 @@ function Partidos({ isAdmin }) {
                             )}
                           </div>
                           <div className="equipo-goles">{partido.equipoVisitante?.goles ?? 0}</div>
+                          <div className="equipo-elo-promedio">Elo prom. {getEloPromedio(partido.equipoVisitante?.jugadores)}</div>
                         </div>
                       </div>
 
@@ -219,17 +244,43 @@ function Partidos({ isAdmin }) {
                     <div className="jugadores-equipo">
                       <h4 className="jugadores-titulo">Rojo</h4>
                       <ul className="jugadores-lista">
-                        {(partido.equipoLocal?.jugadores ?? []).map((jugador, idx) => (
-                          <li key={idx}>{displayJugador(jugador)}</li>
-                        ))}
+                        {(partido.equipoLocal?.jugadores ?? []).map((jugador, idx) => {
+                          const delta = partido.equipoLocal?.eloDeltas?.[idx]
+                          return (
+                            <li key={idx}>
+                              {displayJugador(jugador)}
+                              <span className="partido-jugador-elo-wrap">
+                                <span className="partido-jugador-elo">{getElo(jugador)}</span>
+                                {delta != null && delta !== 0 && (
+                                  <span className={`partido-elo-delta ${delta > 0 ? 'partido-elo-delta-positivo' : 'partido-elo-delta-negativo'}`}>
+                                    {delta > 0 ? `+${delta}` : delta}
+                                  </span>
+                                )}
+                              </span>
+                            </li>
+                          )
+                        })}
                       </ul>
                     </div>
                     <div className="jugadores-equipo">
                       <h4 className="jugadores-titulo">Azul</h4>
                       <ul className="jugadores-lista">
-                        {(partido.equipoVisitante?.jugadores ?? []).map((jugador, idx) => (
-                          <li key={idx}>{displayJugador(jugador)}</li>
-                        ))}
+                        {(partido.equipoVisitante?.jugadores ?? []).map((jugador, idx) => {
+                          const delta = partido.equipoVisitante?.eloDeltas?.[idx]
+                          return (
+                            <li key={idx}>
+                              {displayJugador(jugador)}
+                              <span className="partido-jugador-elo-wrap">
+                                <span className="partido-jugador-elo">{getElo(jugador)}</span>
+                                {delta != null && delta !== 0 && (
+                                  <span className={`partido-elo-delta ${delta > 0 ? 'partido-elo-delta-positivo' : 'partido-elo-delta-negativo'}`}>
+                                    {delta > 0 ? `+${delta}` : delta}
+                                  </span>
+                                )}
+                              </span>
+                            </li>
+                          )
+                        })}
                       </ul>
                     </div>
                   </div>
@@ -251,7 +302,7 @@ function Partidos({ isAdmin }) {
 
           {/* Vista móvil: listado compacto expandible */}
           <div className="partidos-list-mobile">
-            {partidos.map((partido) => {
+            {partidosNormalized.map((partido) => {
               const esFuturo = isPartidoFuturo(partido.fecha, partido.hora)
               const concluido = partido.concluido === true
               const aunNoOcurrio = !concluido && (partido.concluido === false || esFuturo)
@@ -298,6 +349,10 @@ function Partidos({ isAdmin }) {
                       {aunNoOcurrio ? (
                         <div className="partido-detail-resultado partido-resultado-futuro">
                           <span className="partido-aun-no">Aún no ocurrió</span>
+                          <div className="partido-elo-promedio-futuro">
+                            <span>Elo prom. Rojo: {getEloPromedio(partido.equipoLocal?.jugadores)}</span>
+                            <span>Elo prom. Azul: {getEloPromedio(partido.equipoVisitante?.jugadores)}</span>
+                          </div>
                         </div>
                       ) : (
                         <>
@@ -305,11 +360,13 @@ function Partidos({ isAdmin }) {
                             <div className="partido-detail-equipo">
                               <span className="partido-detail-equipo-nombre">Rojo</span>
                               <span className="partido-detail-goles">{partido.equipoLocal?.goles ?? 0}</span>
+                              <span className="partido-detail-elo-prom">Elo prom. {getEloPromedio(partido.equipoLocal?.jugadores)}</span>
                             </div>
                             <div className="partido-detail-vs">VS</div>
                             <div className="partido-detail-equipo">
                               <span className="partido-detail-equipo-nombre">Azul</span>
                               <span className="partido-detail-goles">{partido.equipoVisitante?.goles ?? 0}</span>
+                              <span className="partido-detail-elo-prom">Elo prom. {getEloPromedio(partido.equipoVisitante?.jugadores)}</span>
                             </div>
                           </div>
                           {esEmpate && (
@@ -320,14 +377,40 @@ function Partidos({ isAdmin }) {
 
                       <div className="partido-detail-jugadores">
                         <ul className="jugadores-lista">
-                          {(partido.equipoLocal?.jugadores ?? []).map((jugador, idx) => (
-                            <li key={idx}>{displayJugador(jugador)}</li>
-                          ))}
+                          {(partido.equipoLocal?.jugadores ?? []).map((jugador, idx) => {
+                            const delta = partido.equipoLocal?.eloDeltas?.[idx]
+                            return (
+                              <li key={idx}>
+                                {displayJugador(jugador)}
+                                <span className="partido-jugador-elo-wrap">
+                                  <span className="partido-jugador-elo">{getElo(jugador)}</span>
+                                  {delta != null && delta !== 0 && (
+                                    <span className={`partido-elo-delta ${delta > 0 ? 'partido-elo-delta-positivo' : 'partido-elo-delta-negativo'}`}>
+                                      {delta > 0 ? `+${delta}` : delta}
+                                    </span>
+                                  )}
+                                </span>
+                              </li>
+                            )
+                          })}
                         </ul>
                         <ul className="jugadores-lista">
-                          {(partido.equipoVisitante?.jugadores ?? []).map((jugador, idx) => (
-                            <li key={idx}>{displayJugador(jugador)}</li>
-                          ))}
+                          {(partido.equipoVisitante?.jugadores ?? []).map((jugador, idx) => {
+                            const delta = partido.equipoVisitante?.eloDeltas?.[idx]
+                            return (
+                              <li key={idx}>
+                                {displayJugador(jugador)}
+                                <span className="partido-jugador-elo-wrap">
+                                  <span className="partido-jugador-elo">{getElo(jugador)}</span>
+                                  {delta != null && delta !== 0 && (
+                                    <span className={`partido-elo-delta ${delta > 0 ? 'partido-elo-delta-positivo' : 'partido-elo-delta-negativo'}`}>
+                                      {delta > 0 ? `+${delta}` : delta}
+                                    </span>
+                                  )}
+                                </span>
+                              </li>
+                            )
+                          })}
                         </ul>
                       </div>
                       {isAdmin && (

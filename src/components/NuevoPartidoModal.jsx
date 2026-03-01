@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { addPartido } from '../services/firestore'
+import { addPartido, getJugadores, resolveNombreToEntrada } from '../services/firestore'
 import './NuevoPartidoModal.css'
 
 const DIAS_SEMANA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
@@ -128,6 +128,15 @@ function NuevoPartidoModal({ onClose, onPartidoCreado }) {
     setSaveError('')
     setSaving(true)
     try {
+      const jugadores = await getJugadores()
+      const jugadoresRojo = (datos.jugadoresRojo || []).map((nombre) => {
+        const e = resolveNombreToEntrada(nombre, jugadores)
+        return e.id ? { id: e.id } : { nombre: e.nombre || nombre }
+      })
+      const jugadoresAzul = (datos.jugadoresAzul || []).map((nombre) => {
+        const e = resolveNombreToEntrada(nombre, jugadores)
+        return e.id ? { id: e.id } : { nombre: e.nombre || nombre }
+      })
       await addPartido({
         fecha: datos.fecha,
         hora: datos.hora,
@@ -135,12 +144,12 @@ function NuevoPartidoModal({ onClose, onPartidoCreado }) {
         concluido: false,
         equipoLocal: {
           nombre: 'Rojo',
-          jugadores: datos.jugadoresRojo,
+          jugadores: jugadoresRojo,
           goles: 0,
         },
         equipoVisitante: {
           nombre: 'Azul',
-          jugadores: datos.jugadoresAzul,
+          jugadores: jugadoresAzul,
           goles: 0,
         },
         ganador: 'Empate',
