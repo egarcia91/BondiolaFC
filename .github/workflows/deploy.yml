@@ -1,12 +1,11 @@
-# Build and deploy to GitHub Pages. Firebase config is taken from GitHub Secrets
-# so the API key is never committed to the repo.
+# Build and deploy to GitHub Pages. Solo se ejecuta cuando lo lanzás manualmente
+# desde Actions → "Deploy to GitHub Pages" → "Run workflow".
 # Repo Settings → Pages → Source: "GitHub Actions".
 
 name: Deploy to GitHub Pages
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
