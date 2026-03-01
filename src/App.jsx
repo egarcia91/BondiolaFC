@@ -17,6 +17,7 @@ function App() {
   const [showConfigModal, setShowConfigModal] = useState(false)
   const [yaRegistrado, setYaRegistrado] = useState(null)
   const [jugadorActual, setJugadorActual] = useState(null) // jugador vinculado al usuario (Google)
+  const [equipoPreview, setEquipoPreview] = useState(null) // previsualización de equipo en modal config
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem(THEME_KEY)
     if (saved) return saved === 'dark'
@@ -30,29 +31,27 @@ function App() {
   }, [isDarkMode])
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || user?.type !== 'google') {
       document.documentElement.setAttribute('data-equipo', 'azul')
       return
     }
-    if (user?.type !== 'google' || !user?.email) {
-      document.documentElement.setAttribute('data-equipo', 'azul')
-      return
-    }
-    document.documentElement.setAttribute('data-equipo', 'azul')
+    const equipo = equipoPreview ?? (jugadorActual?.equipoFavorito === 'rojo' ? 'rojo' : 'azul')
+    document.documentElement.setAttribute('data-equipo', equipo)
+  }, [isAuthenticated, user?.type, equipoPreview, jugadorActual?.equipoFavorito])
+
+  useEffect(() => {
+    if (!isAuthenticated || user?.type !== 'google' || !user?.email) return
     let cancelled = false
     getJugadorByEmail(user.email)
       .then((jugador) => {
         if (cancelled) return
         setJugadorActual(jugador || null)
         setYaRegistrado(!!jugador)
-        const equipo = jugador?.equipoFavorito === 'rojo' ? 'rojo' : 'azul'
-        document.documentElement.setAttribute('data-equipo', equipo)
       })
       .catch(() => {
         if (!cancelled) {
           setJugadorActual(null)
           setYaRegistrado(false)
-          document.documentElement.setAttribute('data-equipo', 'azul')
         }
       })
     return () => { cancelled = true }
@@ -171,13 +170,18 @@ function App() {
       {showConfigModal && user?.type === 'google' && (
         <ConfigJugador
           userEmail={user.email}
-          onClose={() => setShowConfigModal(false)}
-          onSaved={(equipo) => {
+          onClose={() => {
+            setEquipoPreview(null)
             setShowConfigModal(false)
-            if (equipo) document.documentElement.setAttribute('data-equipo', equipo)
+          }}
+          onEquipoPreview={setEquipoPreview}
+          onSaved={() => {
+            setEquipoPreview(null)
+            setShowConfigModal(false)
             getJugadorByEmail(user.email).then((j) => setJugadorActual(j || null))
           }}
           onCerrarSesion={() => {
+            setEquipoPreview(null)
             setShowConfigModal(false)
             signOut()
           }}

@@ -175,6 +175,165 @@
   font-size: 0.9rem;
 }
 
+/* Vista móvil: ocultar lista desktop, mostrar lista compacta */
+@media (max-width: 768px) {
+  .partidos-list-desktop {
+    display: none;
+  }
+
+  .partidos-list-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+/* En desktop la lista móvil no se muestra (se define más abajo en min-width: 769px) */
+.partido-list-item {
+  background: var(--card-bg);
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.partido-list-item-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: none;
+  border: none;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.partido-list-fecha {
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: capitalize;
+}
+
+.partido-list-resultado {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.partido-list-chevron {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  transition: transform 0.2s ease;
+}
+
+.partido-list-item.expandido .partido-list-chevron {
+  transform: rotate(90deg);
+}
+
+/* Al expandir en móvil se oculta el título (fecha + resultado) del ítem */
+.partido-list-item.expandido .partido-list-item-header {
+  display: none;
+}
+
+.partido-list-item-detail {
+  padding: 0 1rem 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.partido-detail-cerrar {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0;
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.partido-detail-cerrar:hover {
+  color: var(--primary-color);
+}
+
+.partido-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.partido-detail-meta .fecha-texto {
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: capitalize;
+}
+
+.partido-detail-resultado {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background-color: var(--bg-color);
+  border-radius: 8px;
+}
+
+.partido-detail-equipo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.partido-detail-equipo-nombre {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.partido-detail-goles {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--primary-color);
+}
+
+.partido-detail-vs {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.partido-detail-empate {
+  margin-bottom: 1rem;
+}
+
+.partido-detail-jugadores {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.partido-detail-jugadores .jugadores-lista {
+  margin: 0;
+  padding: 0;
+}
+
+@media (min-width: 769px) {
+  .partidos-list-mobile {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
   .partido-card {
     padding: 1.5rem;

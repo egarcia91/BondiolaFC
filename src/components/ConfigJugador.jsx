@@ -3,12 +3,8 @@ import { getJugadores, updateJugadorPerfil } from '../services/firestore'
 import './ConfigJugador.css'
 
 const POSICIONES = ['Delantero', 'Defensor', 'Mediocampista', 'Arquero']
-const EQUIPOS = [
-  { value: 'rojo', label: 'Rojo' },
-  { value: 'azul', label: 'Azul' },
-]
 
-function ConfigJugador({ userEmail, onClose, onSaved, onCerrarSesion }) {
+function ConfigJugador({ userEmail, onClose, onSaved, onCerrarSesion, onEquipoPreview }) {
   const [jugadores, setJugadores] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -21,6 +17,15 @@ function ConfigJugador({ userEmail, onClose, onSaved, onCerrarSesion }) {
   const [posicion, setPosicion] = useState('')
   const [fechaNacimiento, setFechaNacimiento] = useState('')
   const [equipoFavorito, setEquipoFavorito] = useState('rojo')
+
+  const initialEquipo = jugador?.equipoFavorito === 'azul' ? 'azul' : 'rojo'
+  const hasUnsavedChanges = !!jugador && (
+    (apodo !== (jugador.apodo ?? '')) ||
+    (descripcion !== (jugador.descripcion ?? '')) ||
+    (posicion !== (jugador.posicion ?? '')) ||
+    (fechaNacimiento !== (jugador.fechaNacimiento ? jugador.fechaNacimiento.slice(0, 10) : '')) ||
+    (equipoFavorito !== initialEquipo)
+  )
 
   useEffect(() => {
     getJugadores()
@@ -143,18 +148,33 @@ function ConfigJugador({ userEmail, onClose, onSaved, onCerrarSesion }) {
             />
           </label>
 
-          <label className="config-label">
-            Equipo favorito
-            <select
-              value={equipoFavorito}
-              onChange={(e) => setEquipoFavorito(e.target.value)}
-              className="config-select"
-            >
-              {EQUIPOS.map(({ value, label }) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </label>
+          <div className="config-label">
+            <span className="config-label-text">Equipo favorito</span>
+            <div className="config-equipo-btns" role="group" aria-label="Equipo favorito">
+              <button
+                type="button"
+                className={`config-equipo-btn config-equipo-btn--azul ${equipoFavorito === 'azul' ? 'config-equipo-btn--selected' : ''}`}
+                onClick={() => {
+                  setEquipoFavorito('azul')
+                  onEquipoPreview?.('azul')
+                }}
+                aria-pressed={equipoFavorito === 'azul'}
+              >
+                Azul
+              </button>
+              <button
+                type="button"
+                className={`config-equipo-btn config-equipo-btn--rojo ${equipoFavorito === 'rojo' ? 'config-equipo-btn--selected' : ''}`}
+                onClick={() => {
+                  setEquipoFavorito('rojo')
+                  onEquipoPreview?.('rojo')
+                }}
+                aria-pressed={equipoFavorito === 'rojo'}
+              >
+                Rojo
+              </button>
+            </div>
+          </div>
 
           <label className="config-label">
             Descripción
@@ -173,7 +193,11 @@ function ConfigJugador({ userEmail, onClose, onSaved, onCerrarSesion }) {
             <button type="button" className="config-btn config-btn-sec" onClick={onClose}>
               Cancelar
             </button>
-            <button type="submit" className="config-btn" disabled={saving}>
+            <button
+              type="submit"
+              className={`config-btn ${hasUnsavedChanges ? 'config-btn-unsaved' : ''}`}
+              disabled={saving}
+            >
               {saving ? 'Guardando…' : 'Guardar'}
             </button>
           </div>
