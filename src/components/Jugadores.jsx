@@ -231,6 +231,10 @@ function Jugadores({ isAdmin }) {
                     <span className="stat-label">Elo:</span>
                     <span className="stat-value">{jugador.elo ?? 900}</span>
                   </div>
+                  <div className="stat-item">
+                    <span className="stat-label">MVP:</span>
+                    <span className="stat-value stat-mvp">{jugador.mvp ?? 0}</span>
+                  </div>
                 </div>
                 {(typeof jugador.años === 'number' && jugador.años > 0) || jugador.descripcion ? (
                   <div className="jugador-descripcion">
@@ -270,6 +274,7 @@ function Jugadores({ isAdmin }) {
                       <p><strong>Victorias:</strong> {jugador.victorias}</p>
                       <p><strong>Goles:</strong> {jugador.goles}</p>
                       <p><strong>Elo:</strong> {jugador.elo ?? 900}</p>
+                      <p><strong>MVP:</strong> {jugador.mvp ?? 0}</p>
                     </div>
                     {(typeof jugador.años === 'number' && jugador.años > 0) || jugador.descripcion ? (
                       <div className="jugador-descripcion">

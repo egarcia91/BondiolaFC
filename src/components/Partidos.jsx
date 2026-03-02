@@ -1,12 +1,109 @@
 import { useState, useEffect, useMemo } from 'react'
-import { getPartidos, getJugadores, normalizePartidos, darDeBajaPartido } from '../services/firestore'
+import { getPartidos, getJugadores, normalizePartidos, darDeBajaPartido, votarMvp } from '../services/firestore'
 import NuevoPartidoModal from './NuevoPartidoModal'
 import EditarPartidoModal from './EditarPartidoModal'
 import EditarPartidoEquiposModal from './EditarPartidoEquiposModal'
 import PartidoEnVivo from './PartidoEnVivo'
 import './Partidos.css'
 
-function Partidos({ isAdmin, isAuthenticated }) {
+function getParticipantesIds(partido) {
+  const local = (partido.equipoLocal?.jugadores ?? []).map((e) => e?.id).filter(Boolean)
+  const visitante = (partido.equipoVisitante?.jugadores ?? []).map((e) => e?.id).filter(Boolean)
+  return [...new Set([...local, ...visitante])]
+}
+
+function PartidoMvpBlock({
+  partido,
+  jugadoresById,
+  jugadorActual,
+  displayJugador,
+  mvpVotandoPartidoId,
+  mvpSeleccionadoId,
+  setMvpVotandoPartidoId,
+  setMvpSeleccionadoId,
+  onVotar,
+  enviando,
+}) {
+  const participantes = getParticipantesIds(partido)
+  const mvpVotos = partido.mvpVotos ?? []
+  const mvpResultado = partido.mvpResultado ?? []
+  const aplicado = partido.mvpEstadisticasAplicadas === true
+  const yaVoto = mvpVotos.some((v) => v.votanteId === jugadorActual?.id)
+  const puedeVotar =
+    jugadorActual?.id &&
+    participantes.includes(jugadorActual.id) &&
+    !aplicado
+  const votadoActual = mvpVotos.find((v) => v.votanteId === jugadorActual?.id)?.votadoId ?? ''
+  const seleccionActual = mvpVotandoPartidoId === partido.id ? mvpSeleccionadoId : votadoActual
+  const participantesSinYo = participantes.filter((id) => id !== jugadorActual?.id)
+
+  return (
+    <div className="partido-mvp">
+      <h4 className="partido-mvp-titulo">MVP del partido</h4>
+      {aplicado && mvpResultado.length > 0 && (
+        <p className="partido-mvp-ganadores">
+          {mvpResultado
+            .map(({ jugadorId, mvpSumado }) => {
+              const j = jugadoresById.get(jugadorId)
+              const nombre = j ? (j.apodo || j.nombre) : jugadorId
+              const valor = mvpSumado === 1 ? '1' : mvpSumado.toFixed(2)
+              return `${nombre} (${valor})`
+            })
+            .join(', ')}
+        </p>
+      )}
+      {mvpVotos.length > 0 && (
+        <ul className="partido-mvp-votos" aria-label="Votos visibles">
+          {mvpVotos.map((v, idx) => {
+            const votante = jugadoresById.get(v.votanteId)
+            const votado = jugadoresById.get(v.votadoId)
+            const nomVotante = votante ? (votante.apodo || votante.nombre) : v.votanteId
+            const nomVotado = votado ? (votado.apodo || votado.nombre) : v.votadoId
+            return (
+              <li key={idx} className="partido-mvp-voto-item">
+                {nomVotante} votó por {nomVotado}
+              </li>
+            )
+          })}
+        </ul>
+      )}
+      {puedeVotar && (
+        <div className="partido-mvp-votar">
+          <label htmlFor={`mvp-select-${partido.id}`} className="partido-mvp-label">
+            {yaVoto ? 'Cambiar MVP:' : 'Elegir MVP:'}
+          </label>
+          <select
+            id={`mvp-select-${partido.id}`}
+            className="partido-mvp-select"
+            value={seleccionActual}
+            onChange={(e) => {
+              setMvpVotandoPartidoId(partido.id)
+              setMvpSeleccionadoId(e.target.value)
+            }}
+            disabled={enviando}
+          >
+            <option value="">—</option>
+            {participantesSinYo.map((id) => (
+              <option key={id} value={id}>
+                {displayJugador({ id })}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="partido-mvp-btn"
+            disabled={!seleccionActual || enviando}
+            onClick={() => seleccionActual && onVotar(seleccionActual)}
+          >
+            {enviando ? 'Enviando…' : yaVoto ? 'Cambiar voto' : 'Votar'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Partidos({ isAdmin, isAuthenticated, jugadorActual }) {
   const [partidos, setPartidos] = useState([])
   const [jugadores, setJugadores] = useState([])
   const [loading, setLoading] = useState(true)
@@ -17,6 +114,9 @@ function Partidos({ isAdmin, isAuthenticated }) {
   const [partidoEditandoEquipos, setPartidoEditandoEquipos] = useState(null)
   const [bajandoPartidoId, setBajandoPartidoId] = useState(null)
   const [partidoEnVivo, setPartidoEnVivo] = useState(null)
+  const [mvpVotandoPartidoId, setMvpVotandoPartidoId] = useState(null)
+  const [mvpSeleccionadoId, setMvpSeleccionadoId] = useState('')
+  const [mvpEnviandoPartidoId, setMvpEnviandoPartidoId] = useState(null)
 
   const partidosNormalized = useMemo(
     () => normalizePartidos(partidos, jugadores),
@@ -352,9 +452,11 @@ function Partidos({ isAdmin, isAuthenticated }) {
                         {(partido.equipoLocal?.jugadores ?? []).map((jugador, idx) => {
                           const delta = partido.equipoLocal?.eloDeltas?.[idx]
                           const goles = getGolesEnPartido(partido, 'equipoLocal', jugador)
+                          const esMvp = partido.mvpResultado?.some((r) => r.jugadorId === jugador?.id)
                           return (
                             <li key={idx}>
                               {displayJugador(jugador)}
+                              {esMvp && <span className="partido-jugador-mvp" title="MVP del partido" aria-hidden>🏆</span>}
                               <GolesIcon count={goles} />
                               <span className="partido-jugador-elo-wrap">
                                 <span className="partido-jugador-elo">{getElo(jugador)}</span>
@@ -375,9 +477,11 @@ function Partidos({ isAdmin, isAuthenticated }) {
                         {(partido.equipoVisitante?.jugadores ?? []).map((jugador, idx) => {
                           const delta = partido.equipoVisitante?.eloDeltas?.[idx]
                           const goles = getGolesEnPartido(partido, 'equipoVisitante', jugador)
+                          const esMvp = partido.mvpResultado?.some((r) => r.jugadorId === jugador?.id)
                           return (
                             <li key={idx}>
                               {displayJugador(jugador)}
+                              {esMvp && <span className="partido-jugador-mvp" title="MVP del partido" aria-hidden>🏆</span>}
                               <GolesIcon count={goles} />
                               <span className="partido-jugador-elo-wrap">
                                 <span className="partido-jugador-elo">{getElo(jugador)}</span>
@@ -418,6 +522,33 @@ function Partidos({ isAdmin, isAuthenticated }) {
                         {bajandoPartidoId === partido.id ? 'Dando de baja…' : 'Dar de baja'}
                       </button>
                     </div>
+                  )}
+                  {concluido && (
+                    <PartidoMvpBlock
+                      partido={partido}
+                      jugadoresById={jugadoresById}
+                      jugadorActual={jugadorActual}
+                      displayJugador={displayJugador}
+                      mvpVotandoPartidoId={mvpVotandoPartidoId}
+                      mvpSeleccionadoId={mvpSeleccionadoId}
+                      setMvpVotandoPartidoId={setMvpVotandoPartidoId}
+                      setMvpSeleccionadoId={setMvpSeleccionadoId}
+                      onVotar={async (votadoId) => {
+                        if (!jugadorActual?.id) return
+                        setMvpEnviandoPartidoId(partido.id)
+                        try {
+                          await votarMvp(partido.id, jugadorActual.id, votadoId)
+                          refreshPartidos()
+                          getJugadores().then(setJugadores).catch(() => {})
+                        } catch (e) {
+                          alert(e.message || 'Error al votar')
+                        } finally {
+                          setMvpEnviandoPartidoId(null)
+                          setMvpSeleccionadoId('')
+                        }
+                      }}
+                      enviando={mvpEnviandoPartidoId === partido.id}
+                    />
                   )}
                 </div>
               )
@@ -543,9 +674,11 @@ function Partidos({ isAdmin, isAuthenticated }) {
                           {(partido.equipoLocal?.jugadores ?? []).map((jugador, idx) => {
                             const delta = partido.equipoLocal?.eloDeltas?.[idx]
                             const goles = getGolesEnPartido(partido, 'equipoLocal', jugador)
+                            const esMvp = partido.mvpResultado?.some((r) => r.jugadorId === jugador?.id)
                             return (
                               <li key={idx}>
                                 {displayJugador(jugador)}
+                                {esMvp && <span className="partido-jugador-mvp" title="MVP del partido" aria-hidden>🏆</span>}
                                 <GolesIcon count={goles} />
                                 <span className="partido-jugador-elo-wrap">
                                   <span className="partido-jugador-elo">{getElo(jugador)}</span>
@@ -563,9 +696,11 @@ function Partidos({ isAdmin, isAuthenticated }) {
                           {(partido.equipoVisitante?.jugadores ?? []).map((jugador, idx) => {
                             const delta = partido.equipoVisitante?.eloDeltas?.[idx]
                             const goles = getGolesEnPartido(partido, 'equipoVisitante', jugador)
+                            const esMvp = partido.mvpResultado?.some((r) => r.jugadorId === jugador?.id)
                             return (
                               <li key={idx}>
                                 {displayJugador(jugador)}
+                                {esMvp && <span className="partido-jugador-mvp" title="MVP del partido" aria-hidden>🏆</span>}
                                 <GolesIcon count={goles} />
                                 <span className="partido-jugador-elo-wrap">
                                   <span className="partido-jugador-elo">{getElo(jugador)}</span>
@@ -605,6 +740,33 @@ function Partidos({ isAdmin, isAuthenticated }) {
                             {bajandoPartidoId === partido.id ? 'Dando de baja…' : 'Dar de baja'}
                           </button>
                         </div>
+                      )}
+                      {concluido && (
+                        <PartidoMvpBlock
+                          partido={partido}
+                          jugadoresById={jugadoresById}
+                          jugadorActual={jugadorActual}
+                          displayJugador={displayJugador}
+                          mvpVotandoPartidoId={mvpVotandoPartidoId}
+                          mvpSeleccionadoId={mvpSeleccionadoId}
+                          setMvpVotandoPartidoId={setMvpVotandoPartidoId}
+                          setMvpSeleccionadoId={setMvpSeleccionadoId}
+                          onVotar={async (votadoId) => {
+                            if (!jugadorActual?.id) return
+                            setMvpEnviandoPartidoId(partido.id)
+                            try {
+                              await votarMvp(partido.id, jugadorActual.id, votadoId)
+                              refreshPartidos()
+                              getJugadores().then(setJugadores).catch(() => {})
+                            } catch (e) {
+                              alert(e.message || 'Error al votar')
+                            } finally {
+                              setMvpEnviandoPartidoId(null)
+                              setMvpSeleccionadoId('')
+                            }
+                          }}
+                          enviando={mvpEnviandoPartidoId === partido.id}
+                        />
                       )}
                     </div>
                   )}

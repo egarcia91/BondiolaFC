@@ -263,6 +263,12 @@
   line-height: 1;
 }
 
+.partido-jugador-mvp {
+  margin-left: 0.25rem;
+  display: inline-block;
+  filter: sepia(0.25) saturate(2.2) hue-rotate(-8deg);
+}
+
 .partido-elo-delta {
   font-weight: 700;
   font-size: 0.85rem;
@@ -340,6 +346,81 @@
 .partido-btn-editar-mobile {
   width: 100%;
   margin-top: 1rem;
+}
+
+/* Bloque MVP del partido */
+.partido-mvp {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.partido-mvp-titulo {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.partido-mvp-ganadores {
+  font-size: 0.95rem;
+  color: var(--primary-color);
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+}
+
+.partido-mvp-votos {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.partido-mvp-voto-item {
+  padding: 0.2rem 0;
+}
+
+.partido-mvp-votar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.partido-mvp-label {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.partido-mvp-select {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  min-width: 120px;
+}
+
+.partido-mvp-btn {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  background: var(--primary-color);
+  color: white;
+  cursor: pointer;
+}
+
+.partido-mvp-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.partido-mvp-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Vista móvil: ocultar lista desktop, mostrar lista compacta */

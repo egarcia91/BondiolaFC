@@ -217,6 +217,11 @@
   color: var(--warning-color);
 }
 
+.stat-mvp {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
 .jugador-descripcion {
   padding-top: 1rem;
   border-top: 1px solid var(--border-color);

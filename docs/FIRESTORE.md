@@ -26,6 +26,7 @@ Cada documento tiene estos campos:
 | admin        | boolean | `true` si el jugador es administrador de la página. Por defecto `false`. |
 | fechaNacimiento | string | Fecha de nacimiento (YYYY-MM-DD). El usuario la edita en configuración. |
 | equipoFavorito | string | `"rojo"` o `"azul"`. El usuario lo elige en configuración. |
+| mvp            | number | 0 — cantidad de veces elegido MVP del partido (puede ser fracción si hay empate en votos). |
 
 La **edad** no se guarda en la base: se calcula al leer a partir de `fechaNacimiento` y se muestra en la interfaz solo como número.
 
@@ -43,6 +44,9 @@ Cada documento tiene estos campos:
 | equipoLocal        | map    | Ver abajo   |
 | equipoVisitante    | map    | Ver abajo   |
 | ganador            | string | "Empate" o nombre del equipo ganador |
+| mvpVotos           | array  | (opcional) Encuesta MVP: `[{ votanteId, votadoId }, ...]`. Un voto por jugador participante. |
+| mvpEstadisticasAplicadas | boolean | `true` cuando ya se sumó el MVP a los jugadores ganadores. |
+| mvpResultado       | array  | (opcional) `[{ jugadorId, mvpSumado }, ...]` para poder revertir al dar de baja el partido. |
 
 **equipoLocal / equipoVisitante** (mapas):
 

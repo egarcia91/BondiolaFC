@@ -43,6 +43,7 @@ function NuevoJugadorModal({ onClose, onSaved }) {
         goles: 0,
         elo: 900,
         eloHistorial: [],
+        mvp: 0,
         mail: '',
         registrado: false,
         admin: false,

@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, where, limit } from 'firebase/firestore'
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, where, limit, increment } from 'firebase/firestore'
 import { db } from '../firebase'
 
 const JUGADORES = 'jugadores'
@@ -41,10 +41,12 @@ export async function getJugadores() {
     const añosCalculados = calcularEdad(data.fechaNacimiento)
     const { años: _omit, ...rest } = data
     const elo = typeof data.elo === 'number' && Number.isFinite(data.elo) ? data.elo : 900
+    const mvp = typeof data.mvp === 'number' && Number.isFinite(data.mvp) ? data.mvp : 0
     return {
       id: d.id,
       ...rest,
       elo,
+      mvp,
       admin: data.admin === true,
       años: añosCalculados ?? 0,
     }
@@ -176,6 +178,7 @@ export async function addJugador(jugador) {
   const { id, años: _omit, ...data } = jugador
   const ref = await addDoc(collection(db, JUGADORES), {
     ...data,
+    mvp: typeof data.mvp === 'number' ? data.mvp : 0,
     admin: data.admin === true,
   })
   return ref.id
@@ -347,6 +350,18 @@ export async function revertirEstadisticasPartido(partido, jugadores) {
       })
     )
   )
+
+  // Revertir MVP si se había aplicado
+  const mvpResultado = partido.mvpResultado
+  if (Array.isArray(mvpResultado) && mvpResultado.length > 0 && db) {
+    await Promise.all(
+      mvpResultado.map(({ jugadorId, mvpSumado }) => {
+        if (!jugadorId || typeof mvpSumado !== 'number') return Promise.resolve()
+        const ref = doc(db, JUGADORES, jugadorId)
+        return updateDoc(ref, { mvp: increment(-mvpSumado) })
+      })
+    )
+  }
 }
 
 /**
@@ -507,6 +522,71 @@ export async function updateJugadorDespuesPartido(jugadorId, data) {
     partidosPerdidos,
     goles,
   })
+}
+
+/**
+ * Obtiene los IDs de jugadores registrados que participaron en un partido (pueden votar y ser votados).
+ */
+function getParticipantesIds(partido) {
+  const local = (partido.equipoLocal?.jugadores ?? []).map((e) => e?.id).filter(Boolean)
+  const visitante = (partido.equipoVisitante?.jugadores ?? []).map((e) => e?.id).filter(Boolean)
+  return [...new Set([...local, ...visitante])]
+}
+
+/**
+ * Registra el voto de un jugador como MVP del partido. Solo participantes registrados pueden votar.
+ * El voto es visible. Si todos los participantes votan, se calcula y aplica el MVP automáticamente.
+ * @param {string} partidoId
+ * @param {string} votanteId - ID del jugador que vota
+ * @param {string} votadoId - ID del jugador votado como MVP
+ */
+export async function votarMvp(partidoId, votanteId, votadoId) {
+  if (!db || !partidoId || !votanteId || !votadoId) throw new Error('Datos inválidos para votar MVP')
+  const partidos = await getPartidos()
+  const partido = partidos.find((p) => p.id === partidoId)
+  if (!partido) throw new Error('Partido no encontrado')
+  const jugadores = await getJugadores()
+  const partidoNorm = normalizePartido(partido, jugadores)
+  const participantes = getParticipantesIds(partidoNorm)
+  if (!participantes.includes(votanteId)) throw new Error('Solo los jugadores del partido pueden votar')
+  if (!participantes.includes(votadoId)) throw new Error('Solo se puede votar por un jugador del partido')
+  if (votanteId === votadoId) throw new Error('No podés votarte a vos mismo')
+  if (partido.mvpEstadisticasAplicadas === true) throw new Error('La votación ya cerró')
+  const mvpVotosRaw = Array.isArray(partido.mvpVotos) ? partido.mvpVotos : []
+  const mvpVotos = mvpVotosRaw.filter((v) => v.votanteId !== votanteId)
+  mvpVotos.push({ votanteId, votadoId })
+  await updatePartido(partidoId, { mvpVotos })
+  if (mvpVotos.length >= participantes.length) {
+    const partidoActualizado = { ...partido, mvpVotos }
+    await aplicarMvpEstadisticas(partidoActualizado, jugadores)
+  }
+}
+
+/**
+ * Calcula los ganadores del MVP (más votos) y aplica la suma al campo mvp de cada jugador.
+ * En empate se reparte en partes iguales (2 jugadores = 0.5 cada uno, 3 = 0.33, etc.).
+ * Guarda mvpResultado en el partido para poder revertir al dar de baja.
+ */
+export async function aplicarMvpEstadisticas(partido, jugadores) {
+  if (!partido?.id || partido.mvpEstadisticasAplicadas === true) return
+  const partidoNorm = normalizePartido(partido, jugadores)
+  const participantes = getParticipantesIds(partidoNorm)
+  const mvpVotos = partido.mvpVotos ?? []
+  if (mvpVotos.length < participantes.length) return
+  const votosPorVotado = new Map()
+  mvpVotos.forEach((v) => {
+    if (v.votadoId) votosPorVotado.set(v.votadoId, (votosPorVotado.get(v.votadoId) || 0) + 1)
+  })
+  let maxVotos = 0
+  votosPorVotado.forEach((count) => { if (count > maxVotos) maxVotos = count })
+  const ganadores = [...votosPorVotado.entries()].filter(([, c]) => c === maxVotos).map(([id]) => id)
+  if (ganadores.length === 0) return
+  const mvpSumado = 1 / ganadores.length
+  const mvpResultado = ganadores.map((jugadorId) => ({ jugadorId, mvpSumado }))
+  if (!db) return
+  const refs = ganadores.map((id) => doc(db, JUGADORES, id))
+  await Promise.all(refs.map((ref) => updateDoc(ref, { mvp: increment(mvpSumado) })))
+  await updatePartido(partido.id, { mvpEstadisticasAplicadas: true, mvpResultado })
 }
 
 function buildEloHistorial(j, newElo) {
