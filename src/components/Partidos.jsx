@@ -383,32 +383,6 @@ function Partidos({ isAdmin, isAuthenticated, jugadorActual }) {
                             Partido en vivo
                           </button>
                         )}
-                        {isAdmin && (
-                          <>
-                            <button
-                              type="button"
-                              className="partido-btn-editar"
-                              onClick={() => setPartidoEditandoEquipos(partido)}
-                            >
-                              Editar equipos
-                            </button>
-                            <button
-                              type="button"
-                              className="partido-btn-editar"
-                              onClick={() => setPartidoEditando(partido)}
-                            >
-                              Editar resultado
-                            </button>
-                            <button
-                              type="button"
-                              className="partido-btn-editar partido-btn-baja"
-                              onClick={() => handleDarDeBaja(partido)}
-                              disabled={bajandoPartidoId === partido.id}
-                            >
-                              {bajandoPartidoId === partido.id ? 'Dando de baja…' : 'Dar de baja'}
-                            </button>
-                          </>
-                        )}
                       </div>
                     </>
                   ) : (
@@ -619,32 +593,6 @@ function Partidos({ isAdmin, isAuthenticated, jugadorActual }) {
                               >
                                 Partido en vivo
                               </button>
-                            )}
-                            {isAdmin && (
-                              <>
-                                <button
-                                  type="button"
-                                  className="partido-btn-editar partido-btn-editar-mobile"
-                                  onClick={() => setPartidoEditandoEquipos(partido)}
-                                >
-                                  Editar equipos
-                                </button>
-                                <button
-                                  type="button"
-                                  className="partido-btn-editar partido-btn-editar-mobile"
-                                  onClick={() => setPartidoEditando(partido)}
-                                >
-                                  Editar resultado
-                                </button>
-                                <button
-                                  type="button"
-                                  className="partido-btn-editar partido-btn-editar-mobile partido-btn-baja"
-                                  onClick={() => handleDarDeBaja(partido)}
-                                  disabled={bajandoPartidoId === partido.id}
-                                >
-                                  {bajandoPartidoId === partido.id ? 'Dando de baja…' : 'Dar de baja'}
-                                </button>
-                              </>
                             )}
                           </div>
                         </>
