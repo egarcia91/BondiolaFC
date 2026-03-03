@@ -29,13 +29,9 @@ function PartidoMvpBlock({
   const mvpResultado = partido.mvpResultado ?? []
   const aplicado = partido.mvpEstadisticasAplicadas === true
   const yaVoto = mvpVotos.some((v) => v.votanteId === jugadorActual?.id)
-  const puedeVotar =
-    jugadorActual?.id &&
-    participantes.includes(jugadorActual.id) &&
-    !aplicado
+  const puedeVotar = jugadorActual?.id && jugadorActual?.admin === true && !aplicado
   const votadoActual = mvpVotos.find((v) => v.votanteId === jugadorActual?.id)?.votadoId ?? ''
   const seleccionActual = mvpVotandoPartidoId === partido.id ? mvpSeleccionadoId : votadoActual
-  const participantesSinYo = participantes.filter((id) => id !== jugadorActual?.id)
 
   return (
     <div className="partido-mvp">
@@ -83,7 +79,7 @@ function PartidoMvpBlock({
             disabled={enviando}
           >
             <option value="">—</option>
-            {participantesSinYo.map((id) => (
+            {participantes.map((id) => (
               <option key={id} value={id}>
                 {displayJugador({ id })}
               </option>

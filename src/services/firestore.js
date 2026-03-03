@@ -534,11 +534,11 @@ function getParticipantesIds(partido) {
 }
 
 /**
- * Registra el voto de un jugador como MVP del partido. Solo participantes registrados pueden votar.
- * El voto es visible. Si todos los participantes votan, se calcula y aplica el MVP automáticamente.
+ * Registra el voto de un administrador como MVP del partido. Solo administradores pueden votar.
+ * El voto es visible. Con un solo voto de admin se aplica el MVP.
  * @param {string} partidoId
- * @param {string} votanteId - ID del jugador que vota
- * @param {string} votadoId - ID del jugador votado como MVP
+ * @param {string} votanteId - ID del jugador (administrador) que vota
+ * @param {string} votadoId - ID del jugador votado como MVP (debe ser participante del partido)
  */
 export async function votarMvp(partidoId, votanteId, votadoId) {
   if (!db || !partidoId || !votanteId || !votadoId) throw new Error('Datos inválidos para votar MVP')
@@ -546,18 +546,18 @@ export async function votarMvp(partidoId, votanteId, votadoId) {
   const partido = partidos.find((p) => p.id === partidoId)
   if (!partido) throw new Error('Partido no encontrado')
   const jugadores = await getJugadores()
+  const votanteEsAdmin = jugadores.some((j) => j.id === votanteId && j.admin === true)
+  if (!votanteEsAdmin) throw new Error('Solo los administradores pueden elegir el MVP')
   const partidoNorm = normalizePartido(partido, jugadores)
   const participantes = getParticipantesIds(partidoNorm)
-  if (!participantes.includes(votanteId)) throw new Error('Solo los jugadores del partido pueden votar')
   if (!participantes.includes(votadoId)) throw new Error('Solo se puede votar por un jugador del partido')
-  if (votanteId === votadoId) throw new Error('No podés votarte a vos mismo')
   if (partido.mvpEstadisticasAplicadas === true) throw new Error('La votación ya cerró')
   const mvpVotosRaw = Array.isArray(partido.mvpVotos) ? partido.mvpVotos : []
   const mvpVotos = mvpVotosRaw.filter((v) => v.votanteId !== votanteId)
   mvpVotos.push({ votanteId, votadoId })
   await updatePartido(partidoId, { mvpVotos })
-  if (mvpVotos.length >= participantes.length) {
-    const partidoActualizado = { ...partido, mvpVotos }
+  const partidoActualizado = { ...partido, mvpVotos }
+  if (votanteEsAdmin) {
     await aplicarMvpEstadisticas(partidoActualizado, jugadores)
   }
 }
@@ -572,7 +572,11 @@ export async function aplicarMvpEstadisticas(partido, jugadores) {
   const partidoNorm = normalizePartido(partido, jugadores)
   const participantes = getParticipantesIds(partidoNorm)
   const mvpVotos = partido.mvpVotos ?? []
-  if (mvpVotos.length < participantes.length) return
+  if (mvpVotos.length === 0) return
+  const adminIds = new Set(jugadores.filter((j) => j.admin === true).map((j) => j.id))
+  const algunAdminVoto = mvpVotos.some((v) => adminIds.has(v.votanteId))
+  const todosVotaron = mvpVotos.length >= participantes.length
+  if (!todosVotaron && !algunAdminVoto) return
   const votosPorVotado = new Map()
   mvpVotos.forEach((v) => {
     if (v.votadoId) votosPorVotado.set(v.votadoId, (votosPorVotado.get(v.votadoId) || 0) + 1)
