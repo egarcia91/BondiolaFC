@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
-import { getJugadores, updateJugadorPerfil } from '../services/firestore'
+import { getJugadores, getPartidos, updateJugadorPerfil } from '../services/firestore'
 import './ConfigJugador.css'
 
 const POSICIONES = ['Delantero', 'Defensor', 'Mediocampista', 'Arquero']
 
-function ConfigJugador({ userEmail, onClose, onSaved, onCerrarSesion, onEquipoPreview }) {
+function ConfigJugador({ userEmail, onClose, onSaved, onCerrarSesion, onEquipoPreview, isAdmin }) {
   const [jugadores, setJugadores] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -17,6 +17,32 @@ function ConfigJugador({ userEmail, onClose, onSaved, onCerrarSesion, onEquipoPr
   const [posicion, setPosicion] = useState('')
   const [fechaNacimiento, setFechaNacimiento] = useState('')
   const [equipoFavorito, setEquipoFavorito] = useState('rojo')
+
+  const exportarBackup = async () => {
+    try {
+      const [jugadores, partidos] = await Promise.all([getJugadores(), getPartidos()])
+      const backup = {
+        exportadoEn: new Date().toISOString(),
+        jugadores: jugadores.map((j) => {
+          const { id, ...rest } = j
+          return { id, ...rest }
+        }),
+        partidos: partidos.map((p) => {
+          const { id, ...rest } = p
+          return { id, ...rest }
+        }),
+      }
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `backup-pre-migracion-${new Date().toISOString().slice(0, 10)}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      setError(e.message || 'Error al exportar')
+    }
+  }
 
   const initialEquipo = jugador?.equipoFavorito === 'azul' ? 'azul' : 'rojo'
   const hasUnsavedChanges = !!jugador && (
@@ -204,6 +230,16 @@ function ConfigJugador({ userEmail, onClose, onSaved, onCerrarSesion, onEquipoPr
           {onCerrarSesion && (
             <button type="button" className="config-btn config-btn-outline config-btn-full" onClick={onCerrarSesion}>
               Cerrar sesión
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              type="button"
+              className="config-btn config-btn-outline config-btn-full"
+              onClick={exportarBackup}
+              title="Descargar copia de jugadores y partidos (pre-migración)"
+            >
+              Exportar backup
             </button>
           )}
         </form>

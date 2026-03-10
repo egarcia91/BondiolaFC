@@ -170,6 +170,7 @@ function App() {
       {showConfigModal && user?.type === 'google' && (
         <ConfigJugador
           userEmail={user.email}
+          isAdmin={jugadorActual?.admin === true}
           onClose={() => {
             setEquipoPreview(null)
             setShowConfigModal(false)
