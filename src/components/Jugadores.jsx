@@ -5,21 +5,22 @@ import './Jugadores.css'
 
 const POSICIONES = ['Delantero', 'Defensor', 'Mediocampista', 'Arquero']
 
-function Jugadores({ isAdmin }) {
+function Jugadores({ organizacionId, isAdmin }) {
   const [jugadores, setJugadores] = useState([])
   const [partidos, setPartidos] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filtroPosicion, setFiltroPosicion] = useState('')
-  const [ordenPor, setOrdenPor] = useState('presentes') // 'presentes' por defecto
+  const [ordenPor, setOrdenPor] = useState('presentes')
   const [expandidoId, setExpandidoId] = useState(null)
   const [showNuevoJugadorModal, setShowNuevoJugadorModal] = useState(false)
 
   useEffect(() => {
+    if (!organizacionId) return
     let cancelled = false
     setLoading(true)
     setError(null)
-    Promise.all([getJugadores(), getPartidos()])
+    Promise.all([getJugadores(organizacionId), getPartidos(organizacionId)])
       .then(([jugadoresData, partidosData]) => {
         if (!cancelled) {
           setJugadores(jugadoresData)
@@ -33,7 +34,7 @@ function Jugadores({ isAdmin }) {
         if (!cancelled) setLoading(false)
       })
     return () => { cancelled = true }
-  }, [])
+  }, [organizacionId])
 
   const partidosNormalized = useMemo(
     () => normalizePartidos(partidos, jugadores),
@@ -98,8 +99,9 @@ function Jugadores({ isAdmin }) {
         <p className="empty-state jugadores-error">{error}</p>
         {showNuevoJugadorModal && (
           <NuevoJugadorModal
+            organizacionId={organizacionId}
             onClose={() => setShowNuevoJugadorModal(false)}
-            onSaved={() => { setShowNuevoJugadorModal(false); getJugadores().then(setJugadores).catch(() => {}) }}
+            onSaved={() => { setShowNuevoJugadorModal(false); getJugadores(organizacionId).then(setJugadores).catch(() => {}) }}
           />
         )}
       </div>
@@ -107,7 +109,7 @@ function Jugadores({ isAdmin }) {
   }
 
   const refreshJugadores = () => {
-    getJugadores().then(setJugadores).catch(() => {})
+    if (organizacionId) getJugadores(organizacionId).then(setJugadores).catch(() => {})
   }
 
   return (
@@ -127,6 +129,7 @@ function Jugadores({ isAdmin }) {
 
       {showNuevoJugadorModal && (
         <NuevoJugadorModal
+          organizacionId={organizacionId}
           onClose={() => setShowNuevoJugadorModal(false)}
           onSaved={refreshJugadores}
         />

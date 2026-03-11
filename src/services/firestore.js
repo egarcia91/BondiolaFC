@@ -1,8 +1,10 @@
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, where, limit, increment } from 'firebase/firestore'
+import { collection, getDocs, getDoc, addDoc, doc, updateDoc, deleteDoc, query, where, limit, increment } from 'firebase/firestore'
 import { db } from '../firebase'
 
 const JUGADORES = 'jugadores'
 const PARTIDOS = 'partidos'
+const ORGANIZACIONES = 'organizaciones'
+const INVITACIONES = 'invitaciones'
 
 /** Normaliza nombre para comparar (minúsculas, sin acentos). */
 function normalizeName(s) {
@@ -29,13 +31,18 @@ function calcularEdad(fechaNacimiento) {
 }
 
 /**
- * Obtiene todos los jugadores desde Firestore.
+ * Obtiene todos los jugadores desde Firestore, opcionalmente filtrados por organización.
  * El campo "años" se calcula a partir de fechaNacimiento cuando existe.
+ * @param {string | null} [organizacionId] - Si se pasa, solo jugadores de esa organización; si es null/undefined, todos (legacy/migración).
  * @returns {Promise<Array>} Lista de jugadores con id del documento
  */
-export async function getJugadores() {
+export async function getJugadores(organizacionId = null) {
   if (!db) return []
-  const snap = await getDocs(collection(db, JUGADORES))
+  const col = collection(db, JUGADORES)
+  const q = organizacionId != null && organizacionId !== ''
+    ? query(col, where('organizacionId', '==', organizacionId))
+    : col
+  const snap = await getDocs(q)
   return snap.docs.map((d) => {
     const data = d.data()
     const añosCalculados = calcularEdad(data.fechaNacimiento)
@@ -54,21 +61,28 @@ export async function getJugadores() {
 }
 
 /**
- * Obtiene el jugador cuyo mail coincide con el email dado (usuario registrado).
+ * Obtiene el jugador cuyo mail coincide con el email dado (usuario registrado), opcionalmente en una organización.
  * @param {string} email
- * @returns {Promise<{ id: string, equipoFavorito?: string } | null>}
+ * @param {string | null} [organizacionId] - Si se pasa, solo busca en esa organización.
+ * @returns {Promise<{ id: string, equipoFavorito?: string, organizacionId?: string } | null>}
  */
-export async function getJugadorByEmail(email) {
+export async function getJugadorByEmail(email, organizacionId = null) {
   if (!db || !email) return null
-  const q = query(
-    collection(db, JUGADORES),
-    where('mail', '==', email),
-    limit(1)
-  )
-  const snap = await getDocs(q)
-  if (snap.empty) return null
-  const d = snap.docs[0]
-  return { id: d.id, ...d.data() }
+  const col = collection(db, JUGADORES)
+  const tryQuery = async (mailVal) => {
+    const constraints = [where('mail', '==', mailVal), limit(1)]
+    if (organizacionId != null && organizacionId !== '') {
+      constraints.unshift(where('organizacionId', '==', organizacionId))
+    }
+    const q = query(col, ...constraints)
+    const snap = await getDocs(q)
+    return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
+  }
+  const result = await tryQuery((email || '').trim())
+  if (result) return result
+  const emailLower = (email || '').trim().toLowerCase()
+  if (emailLower !== (email || '').trim()) return tryQuery(emailLower)
+  return null
 }
 
 /** Valor guardado para "Anotador general" en golesAnotadores. */
@@ -151,12 +165,17 @@ export function normalizePartidos(partidos, jugadores) {
 }
 
 /**
- * Obtiene todos los partidos desde Firestore, ordenados por fecha (más recientes primero).
+ * Obtiene todos los partidos desde Firestore, opcionalmente filtrados por organización, ordenados por fecha (más recientes primero).
+ * @param {string | null} [organizacionId] - Si se pasa, solo partidos de esa organización; si es null/undefined, todos (legacy/migración).
  * @returns {Promise<Array>} Lista de partidos con id del documento (formato crudo; usar normalizePartidos con jugadores para IDs)
  */
-export async function getPartidos() {
+export async function getPartidos(organizacionId = null) {
   if (!db) return []
-  const snap = await getDocs(collection(db, PARTIDOS))
+  const col = collection(db, PARTIDOS)
+  const q = organizacionId != null && organizacionId !== ''
+    ? query(col, where('organizacionId', '==', organizacionId))
+    : col
+  const snap = await getDocs(q)
   const partidos = snap.docs.map((doc) => ({
     id: doc.id,
     ...doc.data(),
@@ -169,15 +188,16 @@ export async function getPartidos() {
 }
 
 /**
- * Escribe un jugador en Firestore (sin el campo id).
- * @param {Object} jugador - Datos del jugador
+ * Escribe un jugador en Firestore (sin el campo id). Si se pasa organizacionId se guarda; si no, se omite (legacy / pre-migración).
+ * @param {Object} jugador - Datos del jugador (organizacionId y opcionalmente userId)
  * @returns {Promise<string>} ID del documento creado
  */
 export async function addJugador(jugador) {
   if (!db) throw new Error('Firestore no está configurado')
-  const { id, años: _omit, ...data } = jugador
+  const { id, años: _omit, organizacionId, userId, ...data } = jugador
   const ref = await addDoc(collection(db, JUGADORES), {
     ...data,
+    ...(organizacionId ? { organizacionId, userId: userId || null } : {}),
     mvp: typeof data.mvp === 'number' ? data.mvp : 0,
     admin: data.admin === true,
   })
@@ -185,14 +205,14 @@ export async function addJugador(jugador) {
 }
 
 /**
- * Escribe un partido en Firestore (sin el campo id).
- * @param {Object} partido - Datos del partido
+ * Escribe un partido en Firestore (sin el campo id). Si se pasa organizacionId se guarda; si no, se omite (legacy / pre-migración).
+ * @param {Object} partido - Datos del partido (debe incluir organizacionId después de la migración)
  * @returns {Promise<string>} ID del documento creado
  */
 export async function addPartido(partido) {
   if (!db) throw new Error('Firestore no está configurado')
-  const { id, ...data } = partido
-  const ref = await addDoc(collection(db, PARTIDOS), data)
+  const { id, organizacionId, ...data } = partido
+  const ref = await addDoc(collection(db, PARTIDOS), { ...data, ...(organizacionId ? { organizacionId } : {}) })
   return ref.id
 }
 
@@ -384,8 +404,8 @@ export async function darDeBajaPartido(partido, jugadores) {
  */
 export async function aplicarResultadoPartido(partidoActualizado, jugadoresPasados) {
   if (!partidoActualizado?.id) throw new Error('Partido inválido')
-  // Usar siempre jugadores frescos de Firestore para tener elo y datos al día; normalizar partido por si viene con nombres en vez de ids
-  const jugadores = await getJugadores()
+  const orgId = partidoActualizado.organizacionId ?? null
+  const jugadores = await getJugadores(orgId)
   const partidoNormalizado = normalizePartido(partidoActualizado, jugadores)
   const partido = partidoNormalizado
   const golesLocal = partido.equipoLocal?.goles ?? 0
@@ -542,10 +562,11 @@ function getParticipantesIds(partido) {
  */
 export async function votarMvp(partidoId, votanteId, votadoId) {
   if (!db || !partidoId || !votanteId || !votadoId) throw new Error('Datos inválidos para votar MVP')
-  const partidos = await getPartidos()
+  const partidos = await getPartidos(null)
   const partido = partidos.find((p) => p.id === partidoId)
   if (!partido) throw new Error('Partido no encontrado')
-  const jugadores = await getJugadores()
+  const orgId = partido.organizacionId ?? null
+  const jugadores = await getJugadores(orgId)
   const votanteEsAdmin = jugadores.some((j) => j.id === votanteId && j.admin === true)
   if (!votanteEsAdmin) throw new Error('Solo los administradores pueden elegir el MVP')
   const partidoNorm = normalizePartido(partido, jugadores)
@@ -808,4 +829,121 @@ export async function updateJugadorPerfil(jugadorId, data) {
     }
   })
   if (Object.keys(toUpdate).length) await updateDoc(ref, toUpdate)
+}
+
+export async function getOrganizaciones() {
+  if (!db) return []
+  const snap = await getDocs(collection(db, ORGANIZACIONES))
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+}
+
+export async function getOrganizacion(organizacionId) {
+  if (!db || !organizacionId) return null
+  const snap = await getDoc(doc(db, ORGANIZACIONES, organizacionId))
+  if (!snap.exists()) return null
+  return { id: snap.id, ...snap.data() }
+}
+
+function generarCodigoInvitacion() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  let code = ''
+  for (let i = 0; i < 6; i++) code += chars.charAt(Math.floor(Math.random() * chars.length))
+  return code
+}
+
+export async function getOrganizacionesForUser(uid, email) {
+  if (!db || !uid) return []
+  const col = collection(db, ORGANIZACIONES)
+  const creadas = await getDocs(query(col, where('creadoPor', '==', uid)))
+  const porCreacion = creadas.docs.map((d) => ({ id: d.id, ...d.data() }))
+  const orgIds = new Set(porCreacion.map((o) => o.id))
+  if (email) {
+    const emailNorm = (email || '').trim().toLowerCase()
+    const emailsToQuery = emailNorm ? [emailNorm, (email || '').trim()] : []
+    const seenJugadorIds = new Set()
+    for (const emailVal of emailsToQuery) {
+      if (!emailVal) continue
+      const jugadoresSnap = await getDocs(query(collection(db, JUGADORES), where('mail', '==', emailVal), limit(50)))
+      for (const d of jugadoresSnap.docs) {
+        if (seenJugadorIds.has(d.id)) continue
+        seenJugadorIds.add(d.id)
+        const orgId = d.data().organizacionId
+        if (orgId && !orgIds.has(orgId)) {
+          orgIds.add(orgId)
+          const orgSnap = await getDoc(doc(db, ORGANIZACIONES, orgId))
+          if (orgSnap.exists()) porCreacion.push({ id: orgSnap.id, ...orgSnap.data() })
+        }
+      }
+    }
+  }
+  return porCreacion
+}
+
+export async function createOrganizacion(nombre, creadoPor) {
+  if (!db) throw new Error('Firestore no está configurado')
+  const slug = (nombre || '').trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+  const ref = await addDoc(collection(db, ORGANIZACIONES), {
+    nombre: (nombre || '').trim() || 'Nueva organización',
+    slug: slug || null,
+    creadoPor: creadoPor || '',
+    creadoEn: new Date(),
+  })
+  return ref.id
+}
+
+export async function createInvitacion(organizacionId, creadoPor, diasValidez = 7) {
+  if (!db || !organizacionId) throw new Error('Datos inválidos para crear invitación')
+  let codigo = generarCodigoInvitacion()
+  const col = collection(db, INVITACIONES)
+  let exists = true
+  while (exists) {
+    const snap = await getDocs(query(col, where('codigo', '==', codigo), limit(1)))
+    exists = !snap.empty
+    if (exists) codigo = generarCodigoInvitacion()
+  }
+  const expira = new Date()
+  expira.setDate(expira.getDate() + diasValidez)
+  await addDoc(col, { codigo, organizacionId, creadoPor, creadoEn: new Date(), expiraEn: expira, usado: false })
+  return codigo
+}
+
+export async function getInvitacionByCodigo(codigo) {
+  if (!db || !codigo || codigo.length < 4) return null
+  const snap = await getDocs(query(collection(db, INVITACIONES), where('codigo', '==', codigo.toUpperCase().trim()), limit(1)))
+  if (snap.empty) return null
+  const d = snap.docs[0]
+  const data = d.data()
+  if (data.usado === true) return null
+  if (data.expiraEn && data.expiraEn.toDate && data.expiraEn.toDate() < new Date()) return null
+  return { id: d.id, organizacionId: data.organizacionId, codigo: data.codigo }
+}
+
+export async function marcarInvitacionUsada(invitacionId) {
+  if (!db || !invitacionId) return
+  await updateDoc(doc(db, INVITACIONES, invitacionId), { usado: true })
+}
+
+export async function migrarBondiolaFCaOrganizacion() {
+  if (!db) throw new Error('Firestore no está configurado')
+  const orgs = await getOrganizaciones()
+  const existente = orgs.find((o) => (o.nombre || '').toLowerCase().includes('bondiola'))
+  if (existente) throw new Error('Ya existe una organización Bondiola. No ejecutar migración de nuevo.')
+  const organizacionId = await createOrganizacion('Bondiola FC', '')
+  const jugadoresSnap = await getDocs(collection(db, JUGADORES))
+  const partidosSnap = await getDocs(collection(db, PARTIDOS))
+  let jugadoresActualizados = 0
+  let partidosActualizados = 0
+  for (const d of jugadoresSnap.docs) {
+    if (!d.data().organizacionId) {
+      await updateDoc(doc(db, JUGADORES, d.id), { organizacionId })
+      jugadoresActualizados++
+    }
+  }
+  for (const d of partidosSnap.docs) {
+    if (!d.data().organizacionId) {
+      await updateDoc(doc(db, PARTIDOS, d.id), { organizacionId })
+      partidosActualizados++
+    }
+  }
+  return { organizacionId, jugadoresActualizados, partidosActualizados }
 }

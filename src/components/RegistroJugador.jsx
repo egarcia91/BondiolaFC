@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { getJugadores, updateJugadorRegistro } from '../services/firestore'
 import './RegistroJugador.css'
 
-function RegistroJugador({ userEmail, userDisplayName, onClose, onRegistered }) {
+function RegistroJugador({ organizacionId, userEmail, userDisplayName, onClose, onRegistered }) {
   const [jugadores, setJugadores] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedId, setSelectedId] = useState('')
@@ -17,11 +17,12 @@ function RegistroJugador({ userEmail, userDisplayName, onClose, onRegistered }) 
   })
 
   useEffect(() => {
-    getJugadores()
+    if (!organizacionId) return
+    getJugadores(organizacionId)
       .then(setJugadores)
       .catch(() => setError('Error al cargar jugadores'))
       .finally(() => setLoading(false))
-  }, [])
+  }, [organizacionId])
 
   useEffect(() => {
     if (jugadores.length && userDisplayName && !selectedId) {

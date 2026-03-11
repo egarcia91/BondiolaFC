@@ -25,3 +25,5 @@ try {
 export const auth = app ? getAuth(app) : null
 export const db = app ? getFirestore(app) : null
 export const googleProvider = new GoogleAuthProvider()
+// Mostrar siempre el selector de cuentas para poder elegir otra cuenta de Google
+googleProvider.setCustomParameters({ prompt: 'select_account' })

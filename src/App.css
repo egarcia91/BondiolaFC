@@ -22,6 +22,22 @@
   flex-shrink: 0;
 }
 
+.app-org-select {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  cursor: pointer;
+  max-width: 180px;
+}
+
+.app-org-select option {
+  background: var(--card-bg);
+  color: var(--text);
+}
+
 .app-registro-btn {
   padding: 0.4rem 0.75rem;
   font-size: 0.85rem;

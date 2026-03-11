@@ -99,7 +99,7 @@ function PartidoMvpBlock({
   )
 }
 
-function Partidos({ isAdmin, isAuthenticated, jugadorActual }) {
+function Partidos({ organizacionId, isAdmin, isAuthenticated, jugadorActual }) {
   const [partidos, setPartidos] = useState([])
   const [jugadores, setJugadores] = useState([])
   const [loading, setLoading] = useState(true)
@@ -173,7 +173,7 @@ function Partidos({ isAdmin, isAuthenticated, jugadorActual }) {
   }
 
   const refreshPartidos = () => {
-    getPartidos().then(setPartidos).catch(() => {})
+    if (organizacionId) getPartidos(organizacionId).then(setPartidos).catch(() => {})
   }
 
   const handleDarDeBaja = async (partido) => {
@@ -181,10 +181,12 @@ function Partidos({ isAdmin, isAuthenticated, jugadorActual }) {
     if (!window.confirm(mensaje)) return
     setBajandoPartidoId(partido.id)
     try {
-      const jugadoresActuales = await getJugadores()
+      const jugadoresActuales = await getJugadores(organizacionId)
       await darDeBajaPartido(partido, jugadoresActuales)
-      await getPartidos().then(setPartidos)
-      await getJugadores().then(setJugadores)
+      if (organizacionId) {
+        await getPartidos(organizacionId).then(setPartidos)
+        await getJugadores(organizacionId).then(setJugadores)
+      }
     } catch (err) {
       console.error(err)
       alert(err.message || 'Error al dar de baja el partido')
@@ -194,10 +196,11 @@ function Partidos({ isAdmin, isAuthenticated, jugadorActual }) {
   }
 
   useEffect(() => {
+    if (!organizacionId) return
     let cancelled = false
     setLoading(true)
     setError(null)
-    Promise.all([getPartidos(), getJugadores()])
+    Promise.all([getPartidos(organizacionId), getJugadores(organizacionId)])
       .then(([partidosData, jugadoresData]) => {
         if (!cancelled) {
           setPartidos(partidosData)
@@ -211,7 +214,7 @@ function Partidos({ isAdmin, isAuthenticated, jugadorActual }) {
         if (!cancelled) setLoading(false)
       })
     return () => { cancelled = true }
-  }, [])
+  }, [organizacionId])
 
   // Parsea YYYY-MM-DD como fecha local (evita desfase por UTC)
   const parseFechaLocal = (fechaStr, horaStr = '00:00') => {
@@ -300,6 +303,7 @@ function Partidos({ isAdmin, isAuthenticated, jugadorActual }) {
 
       {showNuevoPartidoModal && (
         <NuevoPartidoModal
+          organizacionId={organizacionId}
           onClose={() => setShowNuevoPartidoModal(false)}
           onPartidoCreado={refreshPartidos}
         />
@@ -330,7 +334,7 @@ function Partidos({ isAdmin, isAuthenticated, jugadorActual }) {
           onTerminar={() => {
             setPartidoEnVivo(null)
             refreshPartidos()
-            getJugadores().then(setJugadores).catch(() => {})
+            getJugadores(organizacionId).then(setJugadores).catch(() => {})
           }}
           onVolver={() => setPartidoEnVivo(null)}
         />
@@ -509,7 +513,7 @@ function Partidos({ isAdmin, isAuthenticated, jugadorActual }) {
                         try {
                           await votarMvp(partido.id, jugadorActual.id, votadoId)
                           refreshPartidos()
-                          getJugadores().then(setJugadores).catch(() => {})
+                          getJugadores(organizacionId).then(setJugadores).catch(() => {})
                         } catch (e) {
                           alert(e.message || 'Error al votar')
                         } finally {
@@ -701,7 +705,7 @@ function Partidos({ isAdmin, isAuthenticated, jugadorActual }) {
                             try {
                               await votarMvp(partido.id, jugadorActual.id, votadoId)
                               refreshPartidos()
-                              getJugadores().then(setJugadores).catch(() => {})
+                              getJugadores(organizacionId).then(setJugadores).catch(() => {})
                             } catch (e) {
                               alert(e.message || 'Error al votar')
                             } finally {

@@ -1,15 +1,41 @@
-# Firestore: jugadores y partidos
+# Firestore: jugadores, partidos, organizaciones e invitaciones
 
-La app usa **Firestore** para leer jugadores y partidos.
+La app usa **Firestore** para leer y escribir jugadores, partidos, organizaciones e invitaciones.
 
 ## Colecciones
 
+### `organizaciones`
+
+Cada documento representa un grupo/organización con sus propios jugadores y partidos.
+
+| Campo     | Tipo   | Descripción |
+| --------- | ------ | ----------- |
+| nombre    | string | Nombre de la organización (ej. "Bondiola FC") |
+| slug      | string | (opcional) Identificador URL-friendly |
+| creadoPor | string | UID del usuario que creó la organización |
+| creadoEn  | timestamp | Fecha de creación |
+
+### `invitaciones`
+
+Códigos de invitación para que un usuario se una a una organización.
+
+| Campo         | Tipo      | Descripción |
+| ------------- | --------- | ----------- |
+| codigo        | string    | Código corto (ej. "ABC123") |
+| organizacionId| string    | ID del documento en `organizaciones` |
+| creadoPor     | string    | UID del admin que creó la invitación |
+| creadoEn      | timestamp | Fecha de creación |
+| expiraEn      | timestamp | Fecha de vencimiento |
+| usado         | boolean   | `true` si ya se usó la invitación |
+
 ### `jugadores`
 
-Cada documento tiene estos campos:
+Cada documento tiene estos campos (y opcionalmente **organizacionId** y **userId** para la etapa multi-organización):
 
 | Campo        | Tipo    | Ejemplo                    |
 | ------------ | ------- | -------------------------- |
+| organizacionId | string | (opcional) ID de la organización a la que pertenece el jugador. Requerido después de la migración. |
+| userId       | string  | (opcional) UID de Firebase Auth del usuario vinculado a este jugador. |
 | nombre       | string  | "Hernan Zaniratto"         |
 | posicion     | string  | "Delantero", "Defensor", "Mediocampista", "Arquero" |
 | apodo        | string  | "Herni"                    |
@@ -32,10 +58,11 @@ La **edad** no se guarda en la base: se calcula al leer a partir de `fechaNacimi
 
 ### `partidos`
 
-Cada documento tiene estos campos:
+Cada documento tiene estos campos (y opcionalmente **organizacionId** para la etapa multi-organización):
 
 | Campo              | Tipo   | Descripción |
 | ------------------ | ------ | ----------- |
+| organizacionId     | string | (opcional) ID de la organización. Requerido después de la migración. |
 | fecha              | string | "2026-02-26" |
 | hora               | string | "21:00"     |
 | lugar              | string | "Por definir" |
@@ -73,7 +100,7 @@ Para que la migración pueda escribir, las reglas de Firestore tienen que permit
 
 ## Reglas de seguridad
 
-En Firestore → Reglas. Para **permitir migración** (usuarios logueados pueden leer y escribir una vez):
+En Firestore → Reglas. Para **permitir migración y uso con organizaciones** (usuarios logueados pueden leer y escribir):
 
 ```
 rules_version = '2';
@@ -84,6 +111,14 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
     match /partidos/{doc} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /organizaciones/{doc} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /invitaciones/{doc} {
       allow read: if true;
       allow write: if request.auth != null;
     }

@@ -80,6 +80,13 @@
   border: 1px solid var(--border-color);
 }
 
+.login-btn-sec {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  font-weight: 500;
+}
+
 .login-divider {
   display: flex;
   align-items: center;

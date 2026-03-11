@@ -5,8 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "predev": "node scripts/generate-firebase-init.js",
+    "prebuild": "node scripts/generate-firebase-init.js",
     "build": "vite build",
-    "preview": "vite preview"
+    "deploy": "npm run build && npx gh-pages -d dist --nojekyll",
+    "preview": "vite preview",
+    "migrar:organizaciones": "node scripts/migrar-firebase-organizaciones.js"
   },
   "dependencies": {
     "firebase": "^12.10.0",
@@ -17,6 +21,8 @@
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "dotenv": "^16.4.5",
+    "firebase-admin": "^13.0.1",
     "vite": "^5.4.2"
   }
 }

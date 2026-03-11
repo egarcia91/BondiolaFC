@@ -4,12 +4,14 @@ import { isFirebaseConfigured } from '../firebase'
 import './Login.css'
 
 function Login() {
-  const { signInWithGoogle, signInAsGuest } = useAuth()
+  const { signInWithGoogle, signInWithGooglePopup, signInAsGuest, authError, clearAuthError } = useAuth()
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loadingPopup, setLoadingPopup] = useState(false)
 
   const handleGoogleSignIn = async () => {
     setError('')
+    clearAuthError()
     setLoading(true)
     try {
       await signInWithGoogle()
@@ -17,6 +19,19 @@ function Login() {
       setError(err.message || 'No se pudo iniciar sesión con Google.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleGoogleSignInPopup = async () => {
+    setError('')
+    clearAuthError()
+    setLoadingPopup(true)
+    try {
+      await signInWithGooglePopup()
+    } catch (err) {
+      setError(err.message || 'No se pudo iniciar sesión con Google.')
+    } finally {
+      setLoadingPopup(false)
     }
   }
 
@@ -34,7 +49,7 @@ function Login() {
               type="button"
               className="login-btn login-btn-google"
               onClick={handleGoogleSignIn}
-              disabled={loading}
+              disabled={loading || loadingPopup}
             >
               {loading ? (
                 <span>Entrando…</span>
@@ -44,6 +59,15 @@ function Login() {
                   Continuar con Google
                 </>
               )}
+            </button>
+            <button
+              type="button"
+              className="login-btn login-btn-sec"
+              onClick={handleGoogleSignInPopup}
+              disabled={loading || loadingPopup}
+              style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}
+            >
+              {loadingPopup ? 'Entrando…' : 'Probar con ventana emergente'}
             </button>
             <div className="login-divider">
               <span>o</span>
@@ -65,6 +89,7 @@ function Login() {
         </button>
 
         {error && <p className="login-error">{error}</p>}
+        {authError && <p className="login-error" role="alert">{authError}</p>}
       </div>
     </div>
   )

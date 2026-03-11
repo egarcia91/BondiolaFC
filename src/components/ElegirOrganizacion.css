@@ -1,0 +1,145 @@
+.elegir-org {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.elegir-org-loading {
+  color: var(--text-muted);
+}
+
+.elegir-org-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: var(--shadow-lg);
+}
+
+.elegir-org-titulo {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+}
+
+.elegir-org-desc {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0 0 1.25rem;
+}
+
+.elegir-org-lista {
+  margin-bottom: 1rem;
+}
+
+.elegir-org-label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.elegir-org-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.35rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg);
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.elegir-org-item:hover {
+  background: var(--hover-bg, rgba(0, 0, 0, 0.05));
+}
+
+.elegir-org-item--activa {
+  border-color: var(--primary, #2563eb);
+  background: var(--primary-light, rgba(37, 99, 235, 0.1));
+}
+
+.elegir-org-item-nombre {
+  font-weight: 500;
+}
+
+.elegir-org-btn {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.elegir-org-btn-sec {
+  background: var(--bg);
+  border-color: var(--border-color);
+}
+
+.elegir-org-btn-primary {
+  background: var(--primary, #2563eb);
+  color: white;
+}
+
+.elegir-org-crear {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.elegir-org-entrar-existente {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.elegir-org-entrar-existente .elegir-org-btn {
+  margin-top: 0.5rem;
+}
+
+.elegir-org-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.elegir-org-input {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.elegir-org-error {
+  color: var(--error, #dc2626);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.elegir-org-form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.elegir-org-form-actions .elegir-org-btn {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.elegir-org-select {
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  font-size: 1rem;
+  background: var(--card-bg);
+}

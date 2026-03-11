@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
-import { getJugadores, getPartidos, updateJugadorPerfil } from '../services/firestore'
+import { getJugadores, getPartidos, updateJugadorPerfil, migrarBondiolaFCaOrganizacion } from '../services/firestore'
+import { useOrg } from '../contexts/OrgContext'
 import './ConfigJugador.css'
 
 const POSICIONES = ['Delantero', 'Defensor', 'Mediocampista', 'Arquero']
 
-function ConfigJugador({ userEmail, onClose, onSaved, onCerrarSesion, onEquipoPreview, isAdmin }) {
+function ConfigJugador({ userEmail, organizacionId, onClose, onSaved, onCerrarSesion, onEquipoPreview, isAdmin }) {
+  const { refreshOrganizaciones } = useOrg()
   const [jugadores, setJugadores] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -17,17 +19,18 @@ function ConfigJugador({ userEmail, onClose, onSaved, onCerrarSesion, onEquipoPr
   const [posicion, setPosicion] = useState('')
   const [fechaNacimiento, setFechaNacimiento] = useState('')
   const [equipoFavorito, setEquipoFavorito] = useState('rojo')
+  const [migrando, setMigrando] = useState(false)
 
   const exportarBackup = async () => {
     try {
-      const [jugadores, partidos] = await Promise.all([getJugadores(), getPartidos()])
+      const [jugadoresData, partidosData] = await Promise.all([getJugadores(organizacionId || null), getPartidos(organizacionId || null)])
       const backup = {
         exportadoEn: new Date().toISOString(),
-        jugadores: jugadores.map((j) => {
+        jugadores: jugadoresData.map((j) => {
           const { id, ...rest } = j
           return { id, ...rest }
         }),
-        partidos: partidos.map((p) => {
+        partidos: partidosData.map((p) => {
           const { id, ...rest } = p
           return { id, ...rest }
         }),
@@ -54,11 +57,12 @@ function ConfigJugador({ userEmail, onClose, onSaved, onCerrarSesion, onEquipoPr
   )
 
   useEffect(() => {
-    getJugadores()
+    if (!organizacionId) return
+    getJugadores(organizacionId)
       .then(setJugadores)
       .catch(() => setError('Error al cargar'))
       .finally(() => setLoading(false))
-  }, [])
+  }, [organizacionId])
 
   useEffect(() => {
     if (jugador) {
@@ -240,6 +244,31 @@ function ConfigJugador({ userEmail, onClose, onSaved, onCerrarSesion, onEquipoPr
               title="Descargar copia de jugadores y partidos (pre-migración)"
             >
               Exportar backup
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              type="button"
+              className="config-btn config-btn-outline config-btn-full"
+              disabled={migrando}
+              onClick={async () => {
+                if (!window.confirm('¿Ejecutar migración a organizaciones? Se creará la organización Bondiola FC y se asignará a todos los jugadores y partidos actuales. Solo ejecutar una vez.')) return
+                setMigrando(true)
+                setError('')
+                try {
+                  const r = await migrarBondiolaFCaOrganizacion()
+                  refreshOrganizaciones()
+                  alert(`Migración lista. Organización: ${r.organizacionId}. Jugadores actualizados: ${r.jugadoresActualizados}. Partidos actualizados: ${r.partidosActualizados}. Recargá la página para ver la organización.`)
+                  onClose?.()
+                } catch (e) {
+                  setError(e.message || 'Error al migrar')
+                } finally {
+                  setMigrando(false)
+                }
+              }}
+              title="Una sola vez: crear org Bondiola FC y asignar a datos existentes"
+            >
+              {migrando ? 'Migrando…' : 'Migrar a organizaciones'}
             </button>
           )}
         </form>

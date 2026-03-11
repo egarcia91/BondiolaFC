@@ -1,23 +1,53 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from './contexts/AuthContext'
+import { useOrg } from './contexts/OrgContext'
 import { getJugadorByEmail } from './services/firestore'
 import Login from './components/Login'
 import Jugadores from './components/Jugadores'
 import Partidos from './components/Partidos'
 import RegistroJugador from './components/RegistroJugador'
 import ConfigJugador from './components/ConfigJugador'
+import ElegirOrganizacion from './components/ElegirOrganizacion'
+import UnirseConCodigoModal from './components/UnirseConCodigoModal'
+import InvitarModal from './components/InvitarModal'
+import { OrgProvider } from './contexts/OrgContext'
 import './App.css'
 
 const THEME_KEY = 'bondiola-fc-theme'
 
 function App() {
-  const { user, loading, signOut, isAuthenticated } = useAuth()
+  const { user, loading, isAuthenticated } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="app app-loading">
+        <p>Cargando…</p>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return <Login />
+  }
+
+  return (
+    <OrgProvider user={user}>
+      <AppConOrg />
+    </OrgProvider>
+  )
+}
+
+function AppConOrg() {
+  const { user, signOut, isAuthenticated } = useAuth()
+  const { organizaciones, currentOrgId, currentOrg, setCurrentOrgId, loading: orgLoading } = useOrg()
   const [activeSection, setActiveSection] = useState('jugadores')
   const [showRegistroModal, setShowRegistroModal] = useState(false)
   const [showConfigModal, setShowConfigModal] = useState(false)
+  const [showUnirseCodigo, setShowUnirseCodigo] = useState(false)
+  const [showInvitar, setShowInvitar] = useState(false)
   const [yaRegistrado, setYaRegistrado] = useState(null)
-  const [jugadorActual, setJugadorActual] = useState(null) // jugador vinculado al usuario (Google)
-  const [equipoPreview, setEquipoPreview] = useState(null) // previsualización de equipo en modal config
+  const [jugadorActual, setJugadorActual] = useState(null)
+  const [equipoPreview, setEquipoPreview] = useState(null)
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem(THEME_KEY)
     if (saved) return saved === 'dark'
@@ -42,7 +72,7 @@ function App() {
   useEffect(() => {
     if (!isAuthenticated || user?.type !== 'google' || !user?.email) return
     let cancelled = false
-    getJugadorByEmail(user.email)
+    getJugadorByEmail(user.email, currentOrgId || null)
       .then((jugador) => {
         if (cancelled) return
         setJugadorActual(jugador || null)
@@ -55,7 +85,7 @@ function App() {
         }
       })
     return () => { cancelled = true }
-  }, [isAuthenticated, user?.type, user?.email])
+  }, [isAuthenticated, user?.type, user?.email, currentOrgId])
 
   useEffect(() => {
     if (!isAuthenticated || user?.type !== 'google') {
@@ -64,7 +94,7 @@ function App() {
     }
   }, [isAuthenticated, user?.type])
 
-  if (loading) {
+  if (orgLoading) {
     return (
       <div className="app app-loading">
         <p>Cargando…</p>
@@ -72,8 +102,25 @@ function App() {
     )
   }
 
-  if (!isAuthenticated) {
-    return <Login />
+  if (!currentOrgId) {
+    const inviteCode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('invite')
+    const showUnirse = showUnirseCodigo || (inviteCode && user?.type === 'google')
+    return (
+      <div className="app">
+        <ElegirOrganizacion
+          user={user}
+          onUnirseConCodigo={user?.type === 'google' ? () => setShowUnirseCodigo(true) : undefined}
+          onElegida={() => {}}
+        />
+        {showUnirse && (
+          <UnirseConCodigoModal
+            codigoInicial={inviteCode || ''}
+            onClose={() => setShowUnirseCodigo(false)}
+            onUnido={() => setShowUnirseCodigo(false)}
+          />
+        )}
+      </div>
+    )
   }
 
   return (
@@ -81,10 +128,33 @@ function App() {
       <header className="app-header">
         <div className="app-header-content">
           <div className="app-header-title">
-            <h1><span className="header-ball" aria-hidden="true">⚽</span> Bondiola FC</h1>
+            <h1><span className="header-ball" aria-hidden="true">⚽</span> {currentOrg?.nombre || 'Bondiola FC'}</h1>
             <p className="subtitle">Futbol en dos cómodas cuotas</p>
           </div>
           <div className="app-header-actions">
+            {organizaciones.length > 1 && (
+              <select
+                className="app-org-select"
+                value={currentOrgId}
+                onChange={(e) => setCurrentOrgId(e.target.value || null)}
+                title="Cambiar de organización"
+                aria-label="Organización"
+              >
+                {organizaciones.map((org) => (
+                  <option key={org.id} value={org.id}>{org.nombre || org.id}</option>
+                ))}
+              </select>
+            )}
+            {user?.type === 'google' && jugadorActual?.admin === true && (
+              <button
+                type="button"
+                className="app-registro-btn"
+                onClick={() => setShowInvitar(true)}
+                title="Generar código de invitación"
+              >
+                Invitar
+              </button>
+            )}
             {user?.type === 'google' && (
               <>
                 {yaRegistrado === false && (
@@ -150,19 +220,20 @@ function App() {
       </nav>
 
       <main className="app-main">
-        {activeSection === 'jugadores' && <Jugadores isAdmin={jugadorActual?.admin === true} />}
-        {activeSection === 'partidos' && <Partidos isAdmin={jugadorActual?.admin === true} isAuthenticated={isAuthenticated} jugadorActual={jugadorActual} />}
+        {activeSection === 'jugadores' && <Jugadores organizacionId={currentOrgId} isAdmin={jugadorActual?.admin === true} />}
+        {activeSection === 'partidos' && <Partidos organizacionId={currentOrgId} isAdmin={jugadorActual?.admin === true} isAuthenticated={isAuthenticated} jugadorActual={jugadorActual} />}
       </main>
 
       {showRegistroModal && user?.type === 'google' && (
         <RegistroJugador
+          organizacionId={currentOrgId}
           userEmail={user.email}
           userDisplayName={user.displayName || ''}
           onClose={() => setShowRegistroModal(false)}
           onRegistered={() => {
             setShowRegistroModal(false)
             setYaRegistrado(true)
-            getJugadorByEmail(user.email).then((j) => setJugadorActual(j || null))
+            getJugadorByEmail(user.email, currentOrgId).then((j) => setJugadorActual(j || null))
           }}
         />
       )}
@@ -170,6 +241,7 @@ function App() {
       {showConfigModal && user?.type === 'google' && (
         <ConfigJugador
           userEmail={user.email}
+          organizacionId={currentOrgId}
           isAdmin={jugadorActual?.admin === true}
           onClose={() => {
             setEquipoPreview(null)
@@ -179,13 +251,20 @@ function App() {
           onSaved={() => {
             setEquipoPreview(null)
             setShowConfigModal(false)
-            getJugadorByEmail(user.email).then((j) => setJugadorActual(j || null))
+            getJugadorByEmail(user.email, currentOrgId).then((j) => setJugadorActual(j || null))
           }}
           onCerrarSesion={() => {
             setEquipoPreview(null)
             setShowConfigModal(false)
             signOut()
           }}
+        />
+      )}
+      {showInvitar && (
+        <InvitarModal
+          organizacionId={currentOrgId}
+          creadoPor={user?.uid ?? ''}
+          onClose={() => setShowInvitar(false)}
         />
       )}
     </div>

@@ -4,7 +4,7 @@ import './NuevoJugadorModal.css'
 
 const POSICIONES = ['Delantero', 'Defensor', 'Mediocampista', 'Arquero']
 
-function NuevoJugadorModal({ onClose, onSaved }) {
+function NuevoJugadorModal({ organizacionId, onClose, onSaved }) {
   const [nombre, setNombre] = useState('')
   const [apodo, setApodo] = useState('')
   const [posicion, setPosicion] = useState('')
@@ -30,6 +30,7 @@ function NuevoJugadorModal({ onClose, onSaved }) {
     setSaving(true)
     try {
       await addJugador({
+        ...(organizacionId ? { organizacionId } : {}),
         nombre: nombreTrim,
         apodo: apodoTrim,
         posicion,

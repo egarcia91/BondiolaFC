@@ -99,7 +99,7 @@ export function parsePartidoMessage(text) {
   }
 }
 
-function NuevoPartidoModal({ onClose, onPartidoCreado }) {
+function NuevoPartidoModal({ organizacionId, onClose, onPartidoCreado }) {
   const [step, setStep] = useState('ingreso')
   const [texto, setTexto] = useState('')
   const [parseError, setParseError] = useState('')
@@ -122,7 +122,7 @@ function NuevoPartidoModal({ onClose, onPartidoCreado }) {
     }
     setLoadingConfirm(true)
     try {
-      const jugadores = await getJugadores()
+      const jugadores = await getJugadores(organizacionId || null)
       const rojo = (result.jugadoresRojo || []).map((nombre) => {
         const e = resolveNombreToEntrada(nombre, jugadores)
         return e.id ? { tipo: 'jugador', id: e.id } : { tipo: 'invitado', nombre: e.nombre || nombre }
@@ -184,6 +184,7 @@ function NuevoPartidoModal({ onClose, onPartidoCreado }) {
         e.tipo === 'jugador' ? { id: e.id } : { nombre: e.nombre }
       )
       await addPartido({
+        ...(organizacionId ? { organizacionId } : {}),
         fecha: editFecha || datos.fecha,
         hora: editHora || datos.hora,
         lugar: datos.lugar || 'Por definir',
