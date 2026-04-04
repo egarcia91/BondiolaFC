@@ -242,7 +242,6 @@ function AppConOrg() {
         <ConfigJugador
           userEmail={user.email}
           organizacionId={currentOrgId}
-          isAdmin={jugadorActual?.admin === true}
           onClose={() => {
             setEquipoPreview(null)
             setShowConfigModal(false)

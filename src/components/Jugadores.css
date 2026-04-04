@@ -84,31 +84,10 @@
   border-color: var(--primary-color);
 }
 
-.controles-btn {
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background-color: var(--bg-color);
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease;
-}
-
-.controles-btn:hover {
-  background-color: var(--border-color);
-}
-
-.controles-btn.active {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-  color: white;
-}
-
-.controles-label-select,
 .controles-orden-select {
-  display: none;
+  min-width: 260px;
+  flex: 1;
+  max-width: min(100%, 400px);
 }
 
 .empty-state {
@@ -222,6 +201,100 @@
   font-weight: 600;
 }
 
+/* Escritorio: métrica alineada al orden seleccionado */
+.stat-item--highlight {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  border-left: 4px solid var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+}
+
+.stat-item--highlight .stat-label {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.stat-item--highlight .stat-value {
+  font-size: 1.65rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-item--accent-presencias {
+  border-left-color: var(--secondary-color);
+  background: color-mix(in srgb, var(--secondary-color) 14%, transparent);
+}
+
+.stat-item--accent-presencias .stat-value {
+  color: var(--secondary-color);
+}
+
+.stat-item--accent-partidos {
+  border-left-color: var(--primary-color);
+}
+
+.stat-item--accent-partidos .stat-value {
+  color: var(--primary-color);
+}
+
+.stat-item--accent-goles {
+  border-left-color: var(--warning-color);
+  background: color-mix(in srgb, var(--warning-color) 14%, transparent);
+}
+
+.stat-item--accent-goles .stat-value {
+  color: var(--warning-color);
+}
+
+.stat-item--accent-elo {
+  border-left-color: var(--primary-color);
+}
+
+.stat-item--accent-elo .stat-value {
+  color: var(--primary-color);
+}
+
+.stat-item--accent-victorias {
+  border-left-color: var(--success-color);
+  background: color-mix(in srgb, var(--success-color) 12%, transparent);
+}
+
+.stat-item--accent-victorias .stat-value {
+  color: var(--success-color);
+}
+
+.stat-item--accent-empates {
+  border-left-color: var(--text-secondary);
+  background: color-mix(in srgb, var(--text-secondary) 10%, transparent);
+}
+
+.stat-item--accent-empates .stat-value {
+  color: var(--text-primary);
+}
+
+.stat-item--accent-derrotas {
+  border-left-color: var(--danger-color, #dc2626);
+  background: color-mix(in srgb, var(--danger-color, #dc2626) 12%, transparent);
+}
+
+.stat-item--accent-derrotas .stat-value {
+  color: var(--danger-color, #dc2626);
+}
+
+.stat-value--sub {
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-value--ratio {
+  font-variant-numeric: tabular-nums;
+}
+
 .jugador-descripcion {
   padding-top: 1rem;
   border-top: 1px solid var(--border-color);
@@ -258,24 +331,17 @@
     font-weight: 600;
   }
 
-  .controles-label-buttons {
-    display: none;
-  }
-
-  .controles-label-select,
-  .controles-orden-select {
-    display: block;
-  }
-
-  .controles-orden-buttons {
-    display: none;
-  }
-
   .controles-select {
     width: 100%;
     min-width: 0;
+    max-width: none;
     padding: 0.4rem 0.5rem;
     font-size: 0.85rem;
+  }
+
+  .controles-orden-select {
+    min-width: 0;
+    flex: none;
   }
 
   .jugadores-grid {
@@ -323,6 +389,81 @@
   .jugador-list-partidos {
     font-size: 0.9rem;
     color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .jugador-list-metric--elo {
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .jugador-list-elo-num {
+    font-weight: 800;
+    font-size: 1.05rem;
+    color: var(--primary-color);
+  }
+
+  .jugador-list-elo-lbl {
+    font-weight: 500;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .jugador-list-metric--goles {
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .jugador-list-goles-num {
+    font-weight: 800;
+    font-size: 1.05rem;
+    color: var(--warning-color);
+  }
+
+  .jugador-list-goles-lbl {
+    font-weight: 500;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .jugador-list-metric--presencias {
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .jugador-list-presencias-num {
+    font-weight: 800;
+    font-size: 1.05rem;
+    color: var(--secondary-color);
+  }
+
+  .jugador-list-presencias-lbl {
+    font-weight: 500;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .jugador-list-metric--promedio {
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    max-width: 42%;
+  }
+
+  .jugador-list-prom-num {
+    font-weight: 800;
+    font-size: 1.05rem;
+    color: var(--text-primary);
+  }
+
+  .jugador-list-prom-lbl {
+    font-weight: 500;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    line-height: 1.2;
   }
 
   .jugador-list-chevron {
