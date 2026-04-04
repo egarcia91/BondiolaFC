@@ -74,6 +74,7 @@ Cada documento tiene estos campos (y opcionalmente **organizacionId** para la et
 | mvpVotos           | array  | (opcional) Encuesta MVP: `[{ votanteId, votadoId }, ...]`. Un voto por jugador participante. |
 | mvpEstadisticasAplicadas | boolean | `true` cuando ya se sumó el MVP a los jugadores ganadores. |
 | mvpResultado       | array  | (opcional) `[{ jugadorId, mvpSumado }, ...]` para poder revertir al dar de baja el partido. |
+| videosYouTube      | array  | (opcional) IDs de video de YouTube (11 caracteres), ej. `["dQw4w9WgXcQ"]`. La app los guarda al normalizar URLs pegadas por el admin. |
 
 **equipoLocal / equipoVisitante** (mapas):
 

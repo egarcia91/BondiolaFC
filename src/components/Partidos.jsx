@@ -4,6 +4,8 @@ import NuevoPartidoModal from './NuevoPartidoModal'
 import EditarPartidoModal from './EditarPartidoModal'
 import EditarPartidoEquiposModal from './EditarPartidoEquiposModal'
 import PartidoEnVivo from './PartidoEnVivo'
+import PartidoVideosSection from './PartidoVideosSection'
+import PartidoVideosModal from './PartidoVideosModal'
 import './Partidos.css'
 
 function getParticipantesIds(partido) {
@@ -113,6 +115,7 @@ function Partidos({ organizacionId, isAdmin, isAuthenticated, jugadorActual }) {
   const [mvpVotandoPartidoId, setMvpVotandoPartidoId] = useState(null)
   const [mvpSeleccionadoId, setMvpSeleccionadoId] = useState('')
   const [mvpEnviandoPartidoId, setMvpEnviandoPartidoId] = useState(null)
+  const [partidoVideosEditando, setPartidoVideosEditando] = useState(null)
 
   const partidosNormalized = useMemo(
     () => normalizePartidos(partidos, jugadores),
@@ -327,6 +330,14 @@ function Partidos({ organizacionId, isAdmin, isAuthenticated, jugadorActual }) {
         />
       )}
 
+      {partidoVideosEditando && (
+        <PartidoVideosModal
+          partido={partidoVideosEditando}
+          onClose={() => setPartidoVideosEditando(null)}
+          onSaved={refreshPartidos}
+        />
+      )}
+
       {partidoEnVivo ? (
         <PartidoEnVivo
           partido={partidoEnVivo}
@@ -471,8 +482,16 @@ function Partidos({ organizacionId, isAdmin, isAuthenticated, jugadorActual }) {
                       </ul>
                     </div>
                   </div>
+                  <PartidoVideosSection partido={partido} />
                   {isAdmin && (
                     <div className="partido-card-actions">
+                      <button
+                        type="button"
+                        className="partido-btn-editar"
+                        onClick={() => setPartidoVideosEditando(partido)}
+                      >
+                        Videos YouTube
+                      </button>
                       <button
                         type="button"
                         className="partido-btn-editar"
@@ -663,8 +682,16 @@ function Partidos({ organizacionId, isAdmin, isAuthenticated, jugadorActual }) {
                           })}
                         </ul>
                       </div>
+                      <PartidoVideosSection partido={partido} />
                       {isAdmin && (
                         <div className="partido-detail-actions">
+                          <button
+                            type="button"
+                            className="partido-btn-editar partido-btn-editar-mobile"
+                            onClick={() => setPartidoVideosEditando(partido)}
+                          >
+                            Videos YouTube
+                          </button>
                           <button
                             type="button"
                             className="partido-btn-editar partido-btn-editar-mobile"
