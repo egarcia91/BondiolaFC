@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
 import { getJugadores, getPartidos, normalizePartidos } from '../services/firestore'
 import NuevoJugadorModal from './NuevoJugadorModal'
+import JugadorEloChart from './JugadorEloChart'
+import JugadorEloComparacionChart from './JugadorEloComparacionChart'
+import { serieEloParaGrafico } from '../utils/eloSerie'
 import './Jugadores.css'
 
 const POSICIONES = ['Delantero', 'Defensor', 'Mediocampista', 'Arquero']
@@ -75,6 +78,109 @@ function accentClassForMetric(clave) {
   }
 }
 
+/** Mapea métrica de comparación → clave para `ratioPorPartido` (promedios). */
+const COMPARAR_RATIO_TIPO = {
+  victorias: 'victorias_partido',
+  derrotas: 'derrotas_partido',
+  empates: 'empates_partido',
+  goles: 'goles_partido',
+}
+
+/** Ícono junto al Elo: sugiere que hay gráfico al hacer clic. */
+const COMPARAR_METRICAS = [
+  { key: 'partidos', label: 'Partidos', get: (j) => (j ? (j.partidos ?? 0) : null) },
+  { key: 'victorias', label: 'Victorias', get: (j) => (j ? (j.victorias ?? 0) : null) },
+  { key: 'derrotas', label: 'Derrotas', get: (j) => (j ? (j.partidosPerdidos ?? 0) : null) },
+  { key: 'empates', label: 'Empates', get: (j) => (j ? (j.partidosEmpatados ?? 0) : null) },
+  { key: 'goles', label: 'Goles', get: (j) => (j ? (j.goles ?? 0) : null) },
+  { key: 'elo', label: 'Elo', get: (j) => (j ? (j.elo ?? 900) : null) },
+  { key: 'mvp', label: 'MVP', get: (j) => (j ? (j.mvp ?? 0) : null) },
+]
+
+/** Sufijo corto en la columna central: totales (n°) vs proporcional por partido (%). */
+function etiquetaCompararCentro(labelBase, key, porPartido) {
+  const conModo = key === 'partidos' || Boolean(COMPARAR_RATIO_TIPO[key])
+  if (!conModo) return labelBase
+  return `${labelBase}${porPartido ? ' (%)' : ' (n°)'}`
+}
+
+function formatMvpComparar(m) {
+  const x = Number(m) || 0
+  if (Math.abs(x - Math.round(x)) < 1e-6) return String(Math.round(x))
+  return x.toFixed(2)
+}
+
+function textoMetricaComparar(key, val, valorEsRatio = false) {
+  if (val == null) return '—'
+  if (key === 'mvp') return formatMvpComparar(val)
+  if (valorEsRatio && COMPARAR_RATIO_TIPO[key]) return formatMovilDosDecimales(val)
+  return String(val)
+}
+
+function formatoDeltaComparar(delta, esRatio) {
+  const d = Math.abs(delta)
+  return esRatio ? (Math.round(d * 100) / 100).toFixed(2) : String(Math.round(d))
+}
+
+/**
+ * Texto “+Δ” en verde si este jugador sale favorecido respecto al otro; si no hay ventaja, null.
+ * (Las derrotas van aparte: ver `diffCompararDerrotasPeor`.)
+ * @param {boolean} [valorEsRatio] - victorias/goles/… como promedio por partido
+ */
+function diffCompararFavor(key, valSelf, valOtro, valorEsRatio = false) {
+  if (key === 'derrotas' || key === 'empates') return null
+  if (valSelf == null || valOtro == null) return null
+  const a = Number(valSelf)
+  const b = Number(valOtro)
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null
+  const iguales = valorEsRatio ? Math.abs(a - b) < 1e-6 : a === b
+  if (iguales) return null
+  const delta = a - b
+  if (delta <= 0) return null
+  if (key === 'mvp') {
+    const rounded = Math.round(delta * 100) / 100
+    const dec = Math.abs(rounded - Math.round(rounded)) >= 1e-6
+    const body = dec ? rounded.toFixed(2) : String(Math.round(rounded))
+    return `+${body}`
+  }
+  return `+${formatoDeltaComparar(delta, valorEsRatio)}`
+}
+
+/**
+ * “-Δ” en rojo junto al jugador que tiene más derrotas (totales o por partido).
+ */
+function diffCompararDerrotasPeor(valSelf, valOtro, valorEsRatio = false) {
+  if (valSelf == null || valOtro == null) return null
+  const a = Number(valSelf)
+  const b = Number(valOtro)
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null
+  const peor = valorEsRatio ? a > b + 1e-6 : a > b
+  if (!peor) return null
+  const delta = a - b
+  return `-${formatoDeltaComparar(delta, valorEsRatio)}`
+}
+
+function IconoEloGrafico() {
+  return (
+    <svg
+      className="jugador-elo-grafico-icon"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <path
+        d="M4 19V10M10 19v-6m6 7V5m6 14V9"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
 function Jugadores({ organizacionId, isAdmin }) {
   const [jugadores, setJugadores] = useState([])
   const [partidos, setPartidos] = useState([])
@@ -82,8 +188,19 @@ function Jugadores({ organizacionId, isAdmin }) {
   const [error, setError] = useState(null)
   const [filtroPosicion, setFiltroPosicion] = useState('')
   const [ordenPor, setOrdenPor] = useState('presentes')
+  const [modoVista, setModoVista] = useState('listado')
+  const [compararIdA, setCompararIdA] = useState('')
+  const [compararIdB, setCompararIdB] = useState('')
+  /** Comparar jugadores: totales vs promedios por partido (toggle en fila Partidos). */
+  const [compararPorPartido, setCompararPorPartido] = useState(false)
   const [expandidoId, setExpandidoId] = useState(null)
+  /** Solo un gráfico de Elo abierto a la vez (acordeón). */
+  const [eloGraficoJugadorId, setEloGraficoJugadorId] = useState(null)
   const [showNuevoJugadorModal, setShowNuevoJugadorModal] = useState(false)
+
+  const toggleEloGrafico = (jugadorId) => {
+    setEloGraficoJugadorId((actual) => (actual === jugadorId ? null : jugadorId))
+  }
 
   useEffect(() => {
     if (!organizacionId) return
@@ -130,6 +247,58 @@ function Jugadores({ organizacionId, isAdmin }) {
     }
     return { presenciasUltimosMap: map, ultimosPartidosVentana: n }
   }, [partidosNormalized, jugadores])
+
+  /** Lista para selects de comparar (solo posición; incluye todos los jugadores de la org). */
+  const jugadoresListaComparar = useMemo(() => {
+    let lista = [...jugadores]
+    if (filtroPosicion) {
+      lista = lista.filter((j) => j.posicion === filtroPosicion)
+    }
+    lista.sort((a, b) =>
+      (a.apodo || a.nombre || '').localeCompare(b.apodo || b.nombre || '', 'es', { sensitivity: 'base' })
+    )
+    return lista
+  }, [jugadores, filtroPosicion])
+
+  const jugadorCompararA = useMemo(
+    () => jugadoresListaComparar.find((j) => j.id === compararIdA) ?? null,
+    [jugadoresListaComparar, compararIdA]
+  )
+  const jugadorCompararB = useMemo(
+    () => jugadoresListaComparar.find((j) => j.id === compararIdB) ?? null,
+    [jugadoresListaComparar, compararIdB]
+  )
+
+  const compararListaKey = useMemo(
+    () => jugadoresListaComparar.map((j) => j.id).join('|'),
+    [jugadoresListaComparar]
+  )
+
+  useEffect(() => {
+    if (modoVista !== 'comparar') setCompararPorPartido(false)
+  }, [modoVista])
+
+  useEffect(() => {
+    if (modoVista !== 'comparar') return
+    const list = jugadoresListaComparar
+    if (!list.length) {
+      setCompararIdA('')
+      setCompararIdB('')
+      return
+    }
+    setCompararIdA((a) => {
+      const nextA = a && list.some((j) => j.id === a) ? a : list[0].id
+      setCompararIdB((b) => {
+        if (list.length < 2) return ''
+        const nextB =
+          b && list.some((j) => j.id === b) && b !== nextA
+            ? b
+            : list.find((j) => j.id !== nextA)?.id ?? ''
+        return nextB
+      })
+      return nextA
+    })
+  }, [modoVista, compararListaKey])
 
   const jugadoresFiltradosYOrdenados = useMemo(() => {
     let lista = [...jugadores]
@@ -266,7 +435,9 @@ function Jugadores({ organizacionId, isAdmin }) {
       )}
 
       {jugadores.length > 0 && (
-        <div className="jugadores-controles">
+        <div
+          className={`jugadores-controles ${modoVista === 'comparar' ? 'jugadores-controles--comparar' : ''}`}
+        >
           <div className="jugadores-filtro">
             <label htmlFor="filtro-posicion" className="controles-label">Posición</label>
             <select
@@ -281,32 +452,261 @@ function Jugadores({ organizacionId, isAdmin }) {
               ))}
             </select>
           </div>
-          <div className="jugadores-orden">
-            <label htmlFor="filtro-orden" className="controles-label">
-              Ordenar por
-            </label>
+          <div className="jugadores-vista">
+            <label htmlFor="jugadores-modo-vista" className="controles-label">Vista</label>
             <select
-              id="filtro-orden"
-              value={ordenPor}
-              onChange={(e) => setOrdenPor(e.target.value)}
-              className="controles-select controles-orden-select"
+              id="jugadores-modo-vista"
+              value={modoVista}
+              className="controles-select controles-modo-vista-select"
+              onChange={(e) => {
+                const v = e.target.value
+                setModoVista(v)
+                if (v !== 'comparar') return
+                const list = filtroPosicion
+                  ? jugadores.filter((j) => j.posicion === filtroPosicion)
+                  : [...jugadores]
+                list.sort((a, b) =>
+                  (a.apodo || a.nombre || '').localeCompare(b.apodo || b.nombre || '', 'es', {
+                    sensitivity: 'base',
+                  })
+                )
+                const validIds = new Set(list.map((j) => j.id))
+                let nextA = compararIdA
+                let nextB = compararIdB
+                if (!nextA || !validIds.has(nextA)) nextA = list[0]?.id ?? ''
+                if (!nextB || !validIds.has(nextB) || nextB === nextA) {
+                  nextB = list.find((j) => j.id !== nextA)?.id ?? ''
+                }
+                setCompararIdA(nextA)
+                setCompararIdB(nextB)
+              }}
             >
-              <option value="presentes">Últimos partidos</option>
-              <option value="ninguno">Sin filtros</option>
-              <option value="partidos">Más partidos</option>
-              <option value="goles">Más goles</option>
-              <option value="ranking">Ranking</option>
-              <option value="goles_partido">Goles por partido</option>
-              <option value="victorias_partido">Victorias por partido</option>
-              <option value="empates_partido">Empates por partido</option>
-              <option value="derrotas_partido">Derrotas por partido</option>
+              <option value="listado">Listado</option>
+              <option value="comparar">Comparar</option>
             </select>
           </div>
+          {modoVista === 'listado' ? (
+            <div className="jugadores-orden">
+              <label htmlFor="filtro-orden" className="controles-label">
+                Ordenar por
+              </label>
+              <select
+                id="filtro-orden"
+                value={ordenPor}
+                onChange={(e) => setOrdenPor(e.target.value)}
+                className="controles-select controles-orden-select"
+              >
+                <option value="presentes">Últimos partidos</option>
+                <option value="ninguno">Sin filtros</option>
+                <option value="partidos">Más partidos</option>
+                <option value="goles">Más goles</option>
+                <option value="ranking">Ranking</option>
+                <option value="goles_partido">Goles por partido</option>
+                <option value="victorias_partido">Victorias por partido</option>
+                <option value="empates_partido">Empates por partido</option>
+                <option value="derrotas_partido">Derrotas por partido</option>
+              </select>
+            </div>
+          ) : (
+            <div className="jugadores-comparar-picks">
+              <div className="jugadores-comparar-pick">
+                <label htmlFor="comparar-jugador-a" className="controles-label">Jugador (izq.)</label>
+                <select
+                  id="comparar-jugador-a"
+                  value={compararIdA}
+                  className="controles-select controles-comparar-select"
+                  onChange={(e) => {
+                    const id = e.target.value
+                    setCompararIdA(id)
+                    if (id && id === compararIdB) setCompararIdB('')
+                  }}
+                >
+                  <option value="">Elegir jugador…</option>
+                  {jugadoresListaComparar.map((j) => (
+                    <option key={j.id} value={j.id} disabled={j.id === compararIdB}>
+                      {j.apodo || j.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="jugadores-comparar-pick">
+                <label htmlFor="comparar-jugador-b" className="controles-label">Jugador (der.)</label>
+                <select
+                  id="comparar-jugador-b"
+                  value={compararIdB}
+                  className="controles-select controles-comparar-select"
+                  onChange={(e) => {
+                    const id = e.target.value
+                    setCompararIdB(id)
+                    if (id && id === compararIdA) setCompararIdA('')
+                  }}
+                >
+                  <option value="">Elegir jugador…</option>
+                  {jugadoresListaComparar.map((j) => (
+                    <option key={j.id} value={j.id} disabled={j.id === compararIdA}>
+                      {j.apodo || j.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
         </div>
       )}
       
       {jugadores.length === 0 ? (
         <p className="empty-state">No hay jugadores registrados</p>
+      ) : modoVista === 'comparar' ? (
+        <div className="jugadores-comparar-vista">
+          {jugadoresListaComparar.length < 2 ? (
+            <p className="empty-state jugadores-comparar-aviso">
+              Para comparar hacen falta al menos dos jugadores
+              {filtroPosicion ? ' con la posición elegida' : ''}. Cambiá el filtro o agregá jugadores.
+            </p>
+          ) : (
+            <>
+              <div className="jugadores-comparar-grid">
+                <div className="jugadores-comparar-row jugadores-comparar-row--cabeceras">
+                  <div className="jugadores-comparar-celda jugadores-comparar-celda--jugador">
+                    <div className="jugadores-comparar-mini-card">
+                      {jugadorCompararA ? (
+                        <>
+                          <div className="jugadores-comparar-mini-titulo">
+                            <h3 className="jugador-apodo">{jugadorCompararA.apodo || jugadorCompararA.nombre}</h3>
+                            {jugadorCompararA.apodo && (
+                              <span className="jugador-nombre">{jugadorCompararA.nombre}</span>
+                            )}
+                          </div>
+                          <span className="jugador-posicion">{jugadorCompararA.posicion}</span>
+                        </>
+                      ) : (
+                        <p className="jugadores-comparar-placeholder">Elegí jugador (izq.)</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="jugadores-comparar-celda jugadores-comparar-celda--centro" aria-hidden="true" />
+                  <div className="jugadores-comparar-celda jugadores-comparar-celda--jugador">
+                    <div className="jugadores-comparar-mini-card">
+                      {jugadorCompararB ? (
+                        <>
+                          <div className="jugadores-comparar-mini-titulo">
+                            <h3 className="jugador-apodo">{jugadorCompararB.apodo || jugadorCompararB.nombre}</h3>
+                            {jugadorCompararB.apodo && (
+                              <span className="jugador-nombre">{jugadorCompararB.nombre}</span>
+                            )}
+                          </div>
+                          <span className="jugador-posicion">{jugadorCompararB.posicion}</span>
+                        </>
+                      ) : (
+                        <p className="jugadores-comparar-placeholder">Elegí jugador (der.)</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {COMPARAR_METRICAS.map(({ key, label: labelBase, get }) => {
+                  const valorEsRatio = compararPorPartido && Boolean(COMPARAR_RATIO_TIPO[key])
+                  const va = valorEsRatio
+                    ? jugadorCompararA
+                      ? ratioPorPartido(jugadorCompararA, COMPARAR_RATIO_TIPO[key])
+                      : null
+                    : get(jugadorCompararA)
+                  const vb = valorEsRatio
+                    ? jugadorCompararB
+                      ? ratioPorPartido(jugadorCompararB, COMPARAR_RATIO_TIPO[key])
+                      : null
+                    : get(jugadorCompararB)
+                  const labelCentro = etiquetaCompararCentro(labelBase, key, compararPorPartido)
+                  const ambos = jugadorCompararA && jugadorCompararB
+                  const esDerrotas = key === 'derrotas'
+                  const marcadorIzq = ambos
+                    ? esDerrotas
+                      ? diffCompararDerrotasPeor(va, vb, valorEsRatio)
+                      : diffCompararFavor(key, va, vb, valorEsRatio)
+                    : null
+                  const marcadorDer = ambos
+                    ? esDerrotas
+                      ? diffCompararDerrotasPeor(vb, va, valorEsRatio)
+                      : diffCompararFavor(key, vb, va, valorEsRatio)
+                    : null
+                  const classMarcador = esDerrotas
+                    ? 'jugadores-comparar-diff-peor'
+                    : 'jugadores-comparar-diff-favor'
+                  const titleMarcador = esDerrotas
+                    ? valorEsRatio
+                      ? 'Más derrotas por partido que el otro jugador'
+                      : 'Más derrotas que el otro jugador'
+                    : 'Ventaja vs el otro jugador'
+                  const etiquetaCentral =
+                    key === 'partidos' ? (
+                      <button
+                        type="button"
+                        className={`jugadores-comparar-partidos-toggle ${compararPorPartido ? 'jugadores-comparar-partidos-toggle--activo' : ''}`}
+                        onClick={() => setCompararPorPartido((v) => !v)}
+                        aria-pressed={compararPorPartido}
+                        title={
+                          compararPorPartido
+                            ? 'Mostrar totales (clic)'
+                            : 'Mostrar victorias, derrotas, empates y goles por partido (clic)'
+                        }
+                      >
+                        {labelCentro}
+                      </button>
+                    ) : (
+                      labelCentro
+                    )
+                  return (
+                    <div key={key} className="jugadores-comparar-row jugadores-comparar-row--metrica">
+                      <div className="jugadores-comparar-celda jugadores-comparar-celda--valor jugadores-comparar-celda--izq">
+                        <span className="jugadores-comparar-valor-line jugadores-comparar-valor-line--izq">
+                          {marcadorIzq && (
+                            <span className={classMarcador} title={titleMarcador}>
+                              {marcadorIzq}
+                            </span>
+                          )}
+                          <span className="jugadores-comparar-valor-num">
+                            {textoMetricaComparar(key, va, valorEsRatio)}
+                          </span>
+                        </span>
+                      </div>
+                      <div className="jugadores-comparar-celda jugadores-comparar-celda--etiqueta">
+                        {etiquetaCentral}
+                      </div>
+                      <div className="jugadores-comparar-celda jugadores-comparar-celda--valor jugadores-comparar-celda--der">
+                        <span className="jugadores-comparar-valor-line jugadores-comparar-valor-line--der">
+                          <span className="jugadores-comparar-valor-num">
+                            {textoMetricaComparar(key, vb, valorEsRatio)}
+                          </span>
+                          {marcadorDer && (
+                            <span className={classMarcador} title={titleMarcador}>
+                              {marcadorDer}
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              {jugadorCompararA && jugadorCompararB && (
+                <JugadorEloComparacionChart
+                  valuesA={serieEloParaGrafico(jugadorCompararA, {
+                    jugadorId: jugadorCompararA.id,
+                    partidosNormalized,
+                  })}
+                  valuesB={serieEloParaGrafico(jugadorCompararB, {
+                    jugadorId: jugadorCompararB.id,
+                    partidosNormalized,
+                  })}
+                  etiquetaA={jugadorCompararA.apodo || jugadorCompararA.nombre}
+                  etiquetaB={jugadorCompararB.apodo || jugadorCompararB.nombre}
+                  jugadorIdA={jugadorCompararA.id}
+                  jugadorIdB={jugadorCompararB.id}
+                  partidosNormalized={partidosNormalized}
+                />
+              )}
+            </>
+          )}
+        </div>
       ) : (
         <>
           {/* Vista desktop: grilla de tarjetas */}
@@ -344,9 +744,35 @@ function Jugadores({ organizacionId, isAdmin }) {
                     <span className="stat-value stat-goals">{jugador.goles}</span>
                   </div>
                   <div className={statDesktopClass('elo')}>
-                    <span className="stat-label">Elo:</span>
-                    <span className="stat-value">{jugador.elo ?? 900}</span>
+                    <button
+                      type="button"
+                      className="jugador-elo-trigger"
+                      onClick={() => toggleEloGrafico(jugador.id)}
+                      aria-expanded={eloGraficoJugadorId === jugador.id}
+                      aria-controls={`jugador-elo-chart-${jugador.id}`}
+                    >
+                      <span className="stat-label jugador-elo-label-with-icon">
+                        <span>Elo:</span>
+                        <IconoEloGrafico />
+                      </span>
+                      <span className="stat-value">{jugador.elo ?? 900}</span>
+                    </button>
                   </div>
+                  {eloGraficoJugadorId === jugador.id && (
+                    <div
+                      className="jugador-elo-chart-slot"
+                      id={`jugador-elo-chart-${jugador.id}`}
+                    >
+                      <JugadorEloChart
+                        values={serieEloParaGrafico(jugador, {
+                          jugadorId: jugador.id,
+                          partidosNormalized,
+                        })}
+                        jugadorId={jugador.id}
+                        partidosNormalized={partidosNormalized}
+                      />
+                    </div>
+                  )}
                   <div className={statDesktopClass('mvp')}>
                     <span className="stat-label">MVP:</span>
                     <span className="stat-value stat-mvp">{jugador.mvp ?? 0}</span>
@@ -379,54 +805,85 @@ function Jugadores({ organizacionId, isAdmin }) {
                 key={jugador.id}
                 className={`jugador-list-item ${expandidoId === jugador.id ? 'expandido' : ''}`}
               >
-                <button
-                  type="button"
-                  className="jugador-list-item-header"
-                  onClick={() => setExpandidoId((id) => (id === jugador.id ? null : jugador.id))}
-                  aria-expanded={expandidoId === jugador.id}
+                <div
+                  className={ordenPor === 'ranking' ? 'jugador-list-item-header-row' : undefined}
                 >
-                  <span className="jugador-list-apodo">{jugador.apodo || jugador.nombre}</span>
-                  <span
+                  <button
+                    type="button"
                     className={
                       ordenPor === 'ranking'
-                        ? 'jugador-list-partidos jugador-list-metric--elo'
-                        : ordenPor === 'goles'
-                          ? 'jugador-list-partidos jugador-list-metric--goles'
-                          : ordenPor === 'presentes' && ultimosPartidosVentana > 0
-                            ? 'jugador-list-partidos jugador-list-metric--presencias'
-                            : ORDEN_PROMEDIO_KEYS.has(ordenPor)
-                              ? 'jugador-list-partidos jugador-list-metric--promedio'
-                              : 'jugador-list-partidos'
+                        ? 'jugador-list-item-header jugador-list-item-header--split'
+                        : 'jugador-list-item-header'
                     }
+                    onClick={() => setExpandidoId((id) => (id === jugador.id ? null : jugador.id))}
+                    aria-expanded={expandidoId === jugador.id}
                   >
-                    {ordenPor === 'ranking' ? (
-                      <>
-                        <span className="jugador-list-elo-num">{jugador.elo ?? 900}</span>
-                        <span className="jugador-list-elo-lbl"> Elo</span>
-                      </>
-                    ) : ordenPor === 'goles' ? (
-                      <>
-                        <span className="jugador-list-goles-num">{jugador.goles ?? 0}</span>
-                        <span className="jugador-list-goles-lbl"> {jugador.goles === 1 ? 'gol' : 'goles'}</span>
-                      </>
-                    ) : ordenPor === 'presentes' && ultimosPartidosVentana > 0 ? (
-                      <>
-                        <span className="jugador-list-presencias-num">{presenciasUltimosMap.get(jugador.id) ?? 0}</span>
-                        <span className="jugador-list-presencias-lbl"> de {ultimosPartidosVentana} partidos</span>
-                      </>
-                    ) : ORDEN_PROMEDIO_KEYS.has(ordenPor) ? (
-                      <>
-                        <span className="jugador-list-prom-num">
-                          {formatMovilDosDecimales(ratioPorPartido(jugador, ordenPor))}
-                        </span>
-                        <span className="jugador-list-prom-lbl">{PROMEDIO_MOVIL_LABEL[ordenPor]}</span>
-                      </>
-                    ) : (
-                      `${jugador.partidos} partidos`
+                    <span className="jugador-list-apodo">{jugador.apodo || jugador.nombre}</span>
+                    {ordenPor !== 'ranking' && (
+                      <span
+                        className={
+                          ordenPor === 'goles'
+                            ? 'jugador-list-partidos jugador-list-metric--goles'
+                            : ordenPor === 'presentes' && ultimosPartidosVentana > 0
+                              ? 'jugador-list-partidos jugador-list-metric--presencias'
+                              : ORDEN_PROMEDIO_KEYS.has(ordenPor)
+                                ? 'jugador-list-partidos jugador-list-metric--promedio'
+                                : 'jugador-list-partidos'
+                        }
+                      >
+                        {ordenPor === 'goles' ? (
+                          <>
+                            <span className="jugador-list-goles-num">{jugador.goles ?? 0}</span>
+                            <span className="jugador-list-goles-lbl"> {jugador.goles === 1 ? 'gol' : 'goles'}</span>
+                          </>
+                        ) : ordenPor === 'presentes' && ultimosPartidosVentana > 0 ? (
+                          <>
+                            <span className="jugador-list-presencias-num">{presenciasUltimosMap.get(jugador.id) ?? 0}</span>
+                            <span className="jugador-list-presencias-lbl"> de {ultimosPartidosVentana} partidos</span>
+                          </>
+                        ) : ORDEN_PROMEDIO_KEYS.has(ordenPor) ? (
+                          <>
+                            <span className="jugador-list-prom-num">
+                              {formatMovilDosDecimales(ratioPorPartido(jugador, ordenPor))}
+                            </span>
+                            <span className="jugador-list-prom-lbl">{PROMEDIO_MOVIL_LABEL[ordenPor]}</span>
+                          </>
+                        ) : (
+                          `${jugador.partidos} partidos`
+                        )}
+                      </span>
                     )}
-                  </span>
-                  <span className="jugador-list-chevron" aria-hidden>›</span>
-                </button>
+                    <span className="jugador-list-chevron" aria-hidden>›</span>
+                  </button>
+                  {ordenPor === 'ranking' && (
+                    <button
+                      type="button"
+                      className="jugador-list-header-elo-btn jugador-list-metric--elo"
+                      onClick={() => toggleEloGrafico(jugador.id)}
+                      aria-expanded={eloGraficoJugadorId === jugador.id}
+                      aria-controls={`jugador-elo-chart-m-${jugador.id}`}
+                    >
+                      <span className="jugador-list-elo-num">{jugador.elo ?? 900}</span>
+                      <span className="jugador-list-elo-lbl"> Elo</span>
+                      <IconoEloGrafico />
+                    </button>
+                  )}
+                </div>
+                {eloGraficoJugadorId === jugador.id && (
+                  <div
+                    className="jugador-list-elo-chart-outer"
+                    id={`jugador-elo-chart-m-${jugador.id}`}
+                  >
+                    <JugadorEloChart
+                      values={serieEloParaGrafico(jugador, {
+                        jugadorId: jugador.id,
+                        partidosNormalized,
+                      })}
+                      jugadorId={jugador.id}
+                      partidosNormalized={partidosNormalized}
+                    />
+                  </div>
+                )}
                 {expandidoId === jugador.id && (
                   <div className="jugador-list-item-detail">
                     {jugador.apodo && <p className="jugador-list-nombre">{jugador.nombre}</p>}
@@ -435,7 +892,18 @@ function Jugadores({ organizacionId, isAdmin }) {
                       <p><strong>Partidos:</strong> {jugador.partidos}</p>
                       <p><strong>Victorias:</strong> {jugador.victorias}</p>
                       <p><strong>Goles:</strong> {jugador.goles}</p>
-                      <p><strong>Elo:</strong> {jugador.elo ?? 900}</p>
+                      <p className="jugador-list-stat-elo-wrap">
+                        <button
+                          type="button"
+                          className="jugador-list-stat-elo-btn"
+                          onClick={() => toggleEloGrafico(jugador.id)}
+                          aria-expanded={eloGraficoJugadorId === jugador.id}
+                          aria-controls={`jugador-elo-chart-m-${jugador.id}`}
+                        >
+                          <strong>Elo:</strong> {jugador.elo ?? 900}
+                          <IconoEloGrafico />
+                        </button>
+                      </p>
                       <p><strong>MVP:</strong> {jugador.mvp ?? 0}</p>
                     </div>
                     {(typeof jugador.años === 'number' && jugador.años > 0) || jugador.descripcion ? (
@@ -454,7 +922,9 @@ function Jugadores({ organizacionId, isAdmin }) {
         </>
       )}
 
-      {jugadores.length > 0 && jugadoresFiltradosYOrdenados.length === 0 && (
+      {jugadores.length > 0 &&
+        modoVista === 'listado' &&
+        jugadoresFiltradosYOrdenados.length === 0 && (
         <p className="empty-state">
           {filtroPosicion && ordenPor === 'ninguno'
             ? 'Ningún jugador en esa posición.'

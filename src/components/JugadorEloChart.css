@@ -1,0 +1,150 @@
+.jugador-elo-chart {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.jugador-elo-chart-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.jugador-elo-chart-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.jugador-elo-chart-svg-wrap {
+  position: relative;
+}
+
+.jugador-elo-chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 168px;
+  max-height: 220px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--primary-color) 5%, var(--bg-color));
+  border: 1px solid var(--border-color);
+}
+
+.jugador-elo-chart-tooltip {
+  position: absolute;
+  z-index: 10;
+  pointer-events: none;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text-primary);
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow, 0 4px 12px rgb(0 0 0 / 0.12));
+  transform: translate(-50%, calc(-100% - 10px));
+}
+
+.jugador-elo-chart-grid-h {
+  stroke: color-mix(in srgb, var(--text-secondary) 22%, var(--border-color));
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.jugador-elo-chart-grid-v {
+  stroke: color-mix(in srgb, var(--text-secondary) 18%, var(--border-color));
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.jugador-elo-chart-plot-frame {
+  stroke: var(--border-color);
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+}
+
+.jugador-elo-chart-line {
+  stroke: var(--primary-color);
+  stroke-width: 2.25;
+  vector-effect: non-scaling-stroke;
+}
+
+.jugador-elo-chart-dot-hit {
+  cursor: pointer;
+  stroke: transparent;
+}
+
+.jugador-elo-chart-dot {
+  fill: var(--card-bg, #fff);
+  stroke: var(--primary-color);
+  stroke-width: 2;
+  pointer-events: none;
+}
+
+.jugador-elo-chart-tick {
+  fill: var(--text-secondary);
+  font-size: 9px;
+  font-weight: 600;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+.jugador-elo-chart-tick--y {
+  font-variant-numeric: tabular-nums;
+}
+
+.jugador-elo-chart-tick--x {
+  font-variant-numeric: tabular-nums;
+}
+
+.jugador-elo-chart-axis-title {
+  fill: var(--text-primary);
+  font-size: 10px;
+  font-weight: 700;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+.jugador-elo-chart-axis-title--x {
+  font-size: 10px;
+}
+
+.jugador-elo-chart-eje-toggle {
+  display: inline-flex;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  background: var(--card-bg, #fff);
+}
+
+.jugador-elo-chart-eje-btn {
+  margin: 0;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.jugador-elo-chart-eje-btn:hover {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--primary-color) 8%, transparent);
+}
+
+.jugador-elo-chart-eje-btn--active {
+  background: color-mix(in srgb, var(--primary-color) 18%, var(--card-bg));
+  color: var(--text-primary);
+}
+
+.jugador-elo-chart-tick--fecha {
+  font-size: 8px;
+}

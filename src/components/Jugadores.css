@@ -90,6 +90,211 @@
   max-width: min(100%, 400px);
 }
 
+.jugadores-vista {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.controles-modo-vista-select {
+  min-width: 150px;
+}
+
+.jugadores-comparar-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.25rem;
+  flex: 1;
+  align-items: flex-end;
+}
+
+.jugadores-comparar-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.controles-comparar-select {
+  min-width: 200px;
+  max-width: min(100%, 280px);
+}
+
+.jugadores-comparar-vista {
+  margin-bottom: 2rem;
+}
+
+.jugadores-comparar-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.jugadores-comparar-row {
+  display: grid;
+  grid-template-columns: 1fr minmax(8rem, auto) 1fr;
+  gap: 0.6rem 1rem;
+  align-items: center;
+}
+
+.jugadores-comparar-celda--jugador {
+  min-width: 0;
+}
+
+.jugadores-comparar-row--cabeceras {
+  margin-bottom: 0.35rem;
+}
+
+.jugadores-comparar-row--metrica {
+  padding: 0.5rem 0.35rem;
+  border-radius: 10px;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+}
+
+.jugadores-comparar-mini-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem 1.15rem;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-height: 5.75rem;
+  justify-content: space-between;
+}
+
+.jugadores-comparar-mini-titulo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.jugadores-comparar-mini-card .jugador-apodo {
+  font-size: 1.3rem;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.jugadores-comparar-mini-card .jugador-nombre {
+  font-size: 0.85rem;
+}
+
+.jugadores-comparar-mini-card .jugador-posicion {
+  align-self: flex-start;
+}
+
+.jugadores-comparar-placeholder {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  align-self: center;
+}
+
+.jugadores-comparar-celda--etiqueta {
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.25;
+}
+
+.jugadores-comparar-partidos-toggle {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 0.2em;
+  border-radius: 4px;
+}
+
+.jugadores-comparar-partidos-toggle:hover,
+.jugadores-comparar-partidos-toggle:focus-visible {
+  color: var(--text-primary);
+  text-decoration-style: solid;
+}
+
+.jugadores-comparar-partidos-toggle:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary-color) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.jugadores-comparar-partidos-toggle--activo {
+  color: var(--primary-color);
+}
+
+.jugadores-comparar-celda--valor {
+  font-size: 1.35rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.jugadores-comparar-celda--izq {
+  text-align: right;
+}
+
+.jugadores-comparar-celda--der {
+  text-align: left;
+}
+
+.jugadores-comparar-valor-line {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  max-width: 100%;
+}
+
+.jugadores-comparar-valor-line--izq {
+  justify-content: flex-end;
+}
+
+.jugadores-comparar-valor-line--der {
+  justify-content: flex-start;
+}
+
+.jugadores-comparar-valor-num {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.jugadores-comparar-diff-favor {
+  font-size: 0.88em;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--success-color, #16a34a);
+}
+
+.jugadores-comparar-diff-peor {
+  font-size: 0.88em;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--danger-color, #dc2626);
+}
+
+.jugadores-comparar-aviso {
+  max-width: 40rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .empty-state {
   text-align: center;
   padding: 3rem;
@@ -199,6 +404,59 @@
 .stat-mvp {
   color: var(--primary-color);
   font-weight: 600;
+}
+
+.jugador-elo-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+}
+
+.stat-item--highlight .jugador-elo-trigger {
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.jugador-elo-trigger:hover {
+  opacity: 0.92;
+}
+
+.jugador-elo-trigger:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.jugador-elo-chart-slot {
+  grid-column: 1 / -1;
+}
+
+.jugador-elo-label-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.jugador-elo-grafico-icon {
+  flex-shrink: 0;
+  color: var(--primary-color);
+  opacity: 0.85;
+}
+
+.stat-item--highlight .jugador-elo-grafico-icon {
+  opacity: 1;
 }
 
 /* Escritorio: métrica alineada al orden seleccionado */
@@ -311,10 +569,48 @@
 }
 
 @media (max-width: 768px) {
+  .jugadores-controles--comparar {
+    grid-template-columns: 1fr;
+  }
+
+  .jugadores-controles--comparar .jugadores-comparar-picks {
+    grid-column: 1 / -1;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .jugadores-controles--comparar .controles-comparar-select {
+    max-width: none;
+    width: 100%;
+  }
+
+  .jugadores-comparar-row {
+    grid-template-columns: 1fr minmax(4.8rem, 26%) 1fr;
+    gap: 0.35rem 0.4rem;
+  }
+
+  .jugadores-comparar-celda--valor {
+    font-size: 1.05rem;
+  }
+
+  .jugadores-comparar-celda--etiqueta {
+    font-size: 0.62rem;
+    letter-spacing: 0.03em;
+  }
+
+  .jugadores-comparar-mini-card {
+    min-height: auto;
+    padding: 0.85rem 0.75rem;
+  }
+
+  .jugadores-comparar-mini-card .jugador-apodo {
+    font-size: 1.05rem;
+  }
+
   .jugadores-controles {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
     padding: 0.75rem;
     margin-bottom: 1.25rem;
   }
@@ -377,6 +673,80 @@
 
   .jugador-list-item-header:active {
     background-color: var(--bg-color);
+  }
+
+  .jugador-list-item-header-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0.4rem;
+    width: 100%;
+  }
+
+  .jugador-list-item-header--split {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .jugador-list-header-elo-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    align-self: center;
+    padding: 0.45rem 0.65rem;
+    margin: 0;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-color);
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    white-space: nowrap;
+  }
+
+  .jugador-list-header-elo-btn:active {
+    background-color: var(--card-bg);
+  }
+
+  .jugador-list-header-elo-btn:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  .jugador-list-elo-chart-outer {
+    padding: 0 1rem 0.65rem;
+  }
+
+  .jugador-list-stat-elo-wrap {
+    margin: 0;
+    flex-basis: 100%;
+  }
+
+  .jugador-list-stat-elo-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font: inherit;
+    color: var(--primary-color);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+  }
+
+  .jugador-list-stat-elo-btn .jugador-elo-grafico-icon {
+    vertical-align: middle;
+  }
+
+  .jugador-list-stat-elo-btn:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    border-radius: 2px;
   }
 
   .jugador-list-apodo {

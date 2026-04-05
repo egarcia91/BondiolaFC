@@ -1,0 +1,188 @@
+.jugador-elo-compara {
+  width: 100%;
+  max-width: 920px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.jugador-elo-compara-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.jugador-elo-compara-meta-right {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+}
+
+.jugador-elo-compara-eje-toggle {
+  display: inline-flex;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  background: var(--card-bg, #fff);
+}
+
+.jugador-elo-compara-eje-btn {
+  margin: 0;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.jugador-elo-compara-eje-btn:hover {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--primary-color) 8%, transparent);
+}
+
+.jugador-elo-compara-eje-btn--active {
+  background: color-mix(in srgb, var(--primary-color) 18%, var(--card-bg));
+  color: var(--text-primary);
+}
+
+.jugador-elo-compara-tick--fecha {
+  font-size: 8px;
+}
+
+.jugador-elo-compara-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.jugador-elo-compara-leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.jugador-elo-compara-leyenda-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.jugador-elo-compara-leyenda--a {
+  color: #dc2626;
+}
+
+.jugador-elo-compara-leyenda--b {
+  color: #2563eb;
+}
+
+.jugador-elo-compara-leyenda-swatch {
+  width: 14px;
+  height: 4px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.jugador-elo-compara-leyenda--a .jugador-elo-compara-leyenda-swatch {
+  background: #dc2626;
+}
+
+.jugador-elo-compara-leyenda--b .jugador-elo-compara-leyenda-swatch {
+  background: #2563eb;
+}
+
+.jugador-elo-compara-svg-wrap {
+  position: relative;
+}
+
+.jugador-elo-compara-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 168px;
+  max-height: 220px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--primary-color) 5%, var(--bg-color));
+  border: 1px solid var(--border-color);
+}
+
+.jugador-elo-compara-tooltip {
+  position: absolute;
+  z-index: 10;
+  pointer-events: none;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text-primary);
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow, 0 4px 12px rgb(0 0 0 / 0.12));
+  transform: translate(-50%, calc(-100% - 10px));
+}
+
+.jugador-elo-compara-grid-h {
+  stroke: color-mix(in srgb, var(--text-secondary) 22%, var(--border-color));
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.jugador-elo-compara-grid-v {
+  stroke: color-mix(in srgb, var(--text-secondary) 18%, var(--border-color));
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.jugador-elo-compara-plot-frame {
+  stroke: var(--border-color);
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+}
+
+.jugador-elo-compara-line {
+  stroke-width: 2.35;
+  vector-effect: non-scaling-stroke;
+}
+
+.jugador-elo-compara-dot-hit {
+  cursor: pointer;
+  stroke: transparent;
+}
+
+.jugador-elo-compara-tick {
+  fill: var(--text-secondary);
+  font-size: 9px;
+  font-weight: 600;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+.jugador-elo-compara-tick--y {
+  font-variant-numeric: tabular-nums;
+}
+
+.jugador-elo-compara-tick--x {
+  font-variant-numeric: tabular-nums;
+}
+
+.jugador-elo-compara-axis-title {
+  fill: var(--text-primary);
+  font-size: 10px;
+  font-weight: 700;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
