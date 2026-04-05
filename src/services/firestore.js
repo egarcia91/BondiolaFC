@@ -837,6 +837,39 @@ export async function getOrganizaciones() {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
 }
 
+/**
+ * Datos públicos para la pantalla de inicio: organizaciones con conteo de jugadores
+ * que jugaron al menos un partido y partidos concluidos. Una sola ronda de lecturas.
+ * @returns {Promise<{ organizaciones: Array, statsPorId: Record<string, { jugadoresActivos: number, partidosJugados: number }> }>}
+ */
+export async function getResumenPublicoOrganizaciones() {
+  if (!db) {
+    return { organizaciones: [], statsPorId: {} }
+  }
+  const [organizaciones, jugadores, partidos] = await Promise.all([
+    getOrganizaciones(),
+    getJugadores(null),
+    getPartidos(null),
+  ])
+  const statsPorId = Object.fromEntries(
+    organizaciones.map((o) => [o.id, { jugadoresActivos: 0, partidosJugados: 0 }])
+  )
+  for (const j of jugadores) {
+    const oid = j.organizacionId
+    if (oid == null || oid === '' || statsPorId[oid] == null) continue
+    if ((j.partidos ?? 0) >= 1) statsPorId[oid].jugadoresActivos += 1
+  }
+  for (const p of partidos) {
+    const oid = p.organizacionId
+    if (oid == null || oid === '' || statsPorId[oid] == null) continue
+    if (p.concluido === true) statsPorId[oid].partidosJugados += 1
+  }
+  const organizacionesOrdenadas = [...organizaciones].sort((a, b) =>
+    (a.nombre || a.id || '').localeCompare(b.nombre || b.id || '', 'es', { sensitivity: 'base' })
+  )
+  return { organizaciones: organizacionesOrdenadas, statsPorId }
+}
+
 export async function getOrganizacion(organizacionId) {
   if (!db || !organizacionId) return null
   const snap = await getDoc(doc(db, ORGANIZACIONES, organizacionId))

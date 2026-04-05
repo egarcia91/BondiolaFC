@@ -1,13 +1,14 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { getOrganizacionesForUser, getOrganizaciones } from '../services/firestore'
 
-const ORG_KEY = 'bondiola-fc-org'
+/** Misma clave que usa `localStorage` para la organización activa (invitado / persistencia). */
+export const ORG_STORAGE_KEY = 'bondiola-fc-org'
 
 const OrgContext = createContext(null)
 
 export function OrgProvider({ children, user }) {
   const [organizaciones, setOrganizaciones] = useState([])
-  const [currentOrgId, setCurrentOrgIdState] = useState(() => localStorage.getItem(ORG_KEY))
+  const [currentOrgId, setCurrentOrgIdState] = useState(() => localStorage.getItem(ORG_STORAGE_KEY))
   const [loading, setLoading] = useState(true)
   const [errorOrgs, setErrorOrgs] = useState(null)
 
@@ -17,8 +18,8 @@ export function OrgProvider({ children, user }) {
   const isGuest = user?.type === 'guest'
 
   const setCurrentOrgId = useCallback((id) => {
-    if (id) localStorage.setItem(ORG_KEY, id)
-    else localStorage.removeItem(ORG_KEY)
+    if (id) localStorage.setItem(ORG_STORAGE_KEY, id)
+    else localStorage.removeItem(ORG_STORAGE_KEY)
     setCurrentOrgIdState(id)
   }, [])
 
@@ -37,12 +38,12 @@ export function OrgProvider({ children, user }) {
         .then((list) => {
           setOrganizaciones(list)
           setErrorOrgs(null)
-          const saved = localStorage.getItem(ORG_KEY)
+          const saved = localStorage.getItem(ORG_STORAGE_KEY)
           if (saved && list.some((o) => o.id === saved)) {
             setCurrentOrgIdState(saved)
           } else if (list.length === 1) {
             setCurrentOrgIdState(list[0].id)
-            localStorage.setItem(ORG_KEY, list[0].id)
+            localStorage.setItem(ORG_STORAGE_KEY, list[0].id)
           } else {
             setCurrentOrgIdState(null)
           }
@@ -58,12 +59,12 @@ export function OrgProvider({ children, user }) {
     getOrganizacionesForUser(uid, email)
       .then((list) => {
         setOrganizaciones(list)
-        const saved = localStorage.getItem(ORG_KEY)
+        const saved = localStorage.getItem(ORG_STORAGE_KEY)
         if (saved && list.some((o) => o.id === saved)) {
           setCurrentOrgIdState(saved)
         } else if (list.length === 1) {
           setCurrentOrgIdState(list[0].id)
-          localStorage.setItem(ORG_KEY, list[0].id)
+          localStorage.setItem(ORG_STORAGE_KEY, list[0].id)
         } else {
           setCurrentOrgIdState(null)
         }
@@ -77,11 +78,11 @@ export function OrgProvider({ children, user }) {
       setErrorOrgs(null)
       getOrganizaciones().then((list) => {
         setOrganizaciones(list)
-        const saved = localStorage.getItem(ORG_KEY)
+        const saved = localStorage.getItem(ORG_STORAGE_KEY)
         if (saved && list.some((o) => o.id === saved)) setCurrentOrgIdState(saved)
         else if (list.length === 1) {
           setCurrentOrgIdState(list[0].id)
-          localStorage.setItem(ORG_KEY, list[0].id)
+          localStorage.setItem(ORG_STORAGE_KEY, list[0].id)
         }
       }).catch((err) => {
         setOrganizaciones([])
@@ -92,11 +93,11 @@ export function OrgProvider({ children, user }) {
     if (!isGoogle || !uid) return
     getOrganizacionesForUser(uid, email).then((list) => {
       setOrganizaciones(list)
-      const saved = localStorage.getItem(ORG_KEY)
+      const saved = localStorage.getItem(ORG_STORAGE_KEY)
       if (saved && list.some((o) => o.id === saved)) setCurrentOrgIdState(saved)
       else if (list.length === 1) {
         setCurrentOrgIdState(list[0].id)
-        localStorage.setItem(ORG_KEY, list[0].id)
+        localStorage.setItem(ORG_STORAGE_KEY, list[0].id)
       }
     })
   }, [uid, email, isGoogle, isGuest])

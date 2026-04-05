@@ -1,0 +1,208 @@
+.pantalla-inicio {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1.25rem 3rem;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+}
+
+.pantalla-inicio-inner {
+  width: 100%;
+  max-width: 520px;
+}
+
+.pantalla-inicio-header {
+  text-align: center;
+  color: white;
+  margin-bottom: 1.5rem;
+}
+
+.pantalla-inicio-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+  line-height: 1.2;
+}
+
+.pantalla-inicio-ball {
+  color: #93c5fd;
+}
+
+[data-equipo='rojo'] .pantalla-inicio-ball {
+  color: #fecaca;
+}
+
+.pantalla-inicio-subtitle {
+  margin: 0;
+  font-size: 1rem;
+  opacity: 0.92;
+  font-weight: 300;
+}
+
+.pantalla-inicio-panel {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 1.25rem 1.35rem 1.5rem;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
+}
+
+.pantalla-inicio-panel-title {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 0.5rem;
+}
+
+.pantalla-inicio-panel-hint {
+  margin: 0 0 1rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.pantalla-inicio-loading,
+.pantalla-inicio-empty,
+.pantalla-inicio-hint {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.pantalla-inicio-error {
+  margin: 0;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger-color);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.pantalla-inicio-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.pantalla-inicio-li {
+  margin: 0;
+  padding: 0;
+}
+
+.pantalla-inicio-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--primary-color) 7%, var(--bg-color));
+  border: 1px solid var(--border-color);
+  width: 100%;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+}
+
+.pantalla-inicio-item:hover {
+  background: color-mix(in srgb, var(--primary-color) 13%, var(--bg-color));
+  border-color: color-mix(in srgb, var(--primary-color) 35%, var(--border-color));
+}
+
+.pantalla-inicio-item:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.pantalla-inicio-item:active {
+  transform: scale(0.995);
+}
+
+.pantalla-inicio-item-nombre {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pantalla-inicio-item-metricas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+}
+
+.pantalla-inicio-metrica {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+}
+
+.pantalla-inicio-metrica-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.pantalla-inicio-metrica-valor {
+  font-size: 1.1rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.pantalla-inicio-actions {
+  margin-top: 1.5rem;
+}
+
+.pantalla-inicio-btn-ingresar {
+  width: 100%;
+  padding: 0.95rem 1.25rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--primary-color);
+  background: var(--card-bg);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: var(--shadow);
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.pantalla-inicio-btn-ingresar:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+@media (min-width: 480px) {
+  .pantalla-inicio-item {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .pantalla-inicio-item-metricas {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 400px) {
+  .pantalla-inicio {
+    padding: 1.25rem 1rem 2rem;
+  }
+
+  .pantalla-inicio-title {
+    font-size: 1.65rem;
+  }
+}

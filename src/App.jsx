@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from './contexts/AuthContext'
 import { useOrg } from './contexts/OrgContext'
-import { getJugadorByEmail } from './services/firestore'
+import { getJugadorByEmail, getJugadores, getPartidos } from './services/firestore'
 import Login from './components/Login'
+import PantallaInicio from './components/PantallaInicio'
 import Jugadores from './components/Jugadores'
 import Partidos from './components/Partidos'
 import RegistroJugador from './components/RegistroJugador'
@@ -17,6 +18,15 @@ const THEME_KEY = 'bondiola-fc-theme'
 
 function App() {
   const { user, loading, isAuthenticated } = useAuth()
+  const [vistaAccesoPublico, setVistaAccesoPublico] = useState('inicio')
+  const eraAutenticadoRef = useRef(false)
+
+  useEffect(() => {
+    if (eraAutenticadoRef.current && !isAuthenticated) {
+      setVistaAccesoPublico('inicio')
+    }
+    eraAutenticadoRef.current = isAuthenticated
+  }, [isAuthenticated])
 
   if (loading) {
     return (
@@ -27,7 +37,10 @@ function App() {
   }
 
   if (!isAuthenticated) {
-    return <Login />
+    if (vistaAccesoPublico === 'inicio') {
+      return <PantallaInicio onIngresar={() => setVistaAccesoPublico('login')} />
+    }
+    return <Login onVolverInicio={() => setVistaAccesoPublico('inicio')} />
   }
 
   return (
@@ -48,6 +61,8 @@ function AppConOrg() {
   const [yaRegistrado, setYaRegistrado] = useState(null)
   const [jugadorActual, setJugadorActual] = useState(null)
   const [equipoPreview, setEquipoPreview] = useState(null)
+  /** Contadores de la org: jugadores con ≥1 partido, partidos concluidos. */
+  const [orgStats, setOrgStats] = useState({ jugadoresActivos: null, partidosJugados: null })
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem(THEME_KEY)
     if (saved) return saved === 'dark'
@@ -94,6 +109,25 @@ function AppConOrg() {
     }
   }, [isAuthenticated, user?.type])
 
+  useEffect(() => {
+    if (!currentOrgId) return
+    let cancelled = false
+    setOrgStats({ jugadoresActivos: null, partidosJugados: null })
+    Promise.all([getJugadores(currentOrgId), getPartidos(currentOrgId)])
+      .then(([jugadores, partidos]) => {
+        if (cancelled) return
+        const jugadoresActivos = jugadores.filter((j) => (j.partidos ?? 0) >= 1).length
+        const partidosJugados = partidos.filter((p) => p.concluido === true).length
+        setOrgStats({ jugadoresActivos, partidosJugados })
+      })
+      .catch(() => {
+        if (!cancelled) setOrgStats({ jugadoresActivos: 0, partidosJugados: 0 })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [currentOrgId])
+
   if (orgLoading) {
     return (
       <div className="app app-loading">
@@ -130,6 +164,23 @@ function AppConOrg() {
           <div className="app-header-title">
             <h1><span className="header-ball" aria-hidden="true">⚽</span> {currentOrg?.nombre || 'Bondiola FC'}</h1>
             <p className="subtitle">Futbol en dos cómodas cuotas</p>
+            <div className="app-header-stats" aria-live="polite">
+              <div
+                className="app-header-stat"
+                title="Jugadores de la organización que jugaron al menos un partido"
+              >
+                <span className="app-header-stat-label">Jugadores</span>
+                <span className="app-header-stat-value">
+                  {orgStats.jugadoresActivos ?? '…'}
+                </span>
+              </div>
+              <div className="app-header-stat" title="Partidos con resultado cargado en la organización">
+                <span className="app-header-stat-label">Partidos</span>
+                <span className="app-header-stat-value">
+                  {orgStats.partidosJugados ?? '…'}
+                </span>
+              </div>
+            </div>
           </div>
           <div className="app-header-actions">
             {organizaciones.length > 1 && (

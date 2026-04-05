@@ -3,7 +3,10 @@ import { useAuth } from '../contexts/AuthContext'
 import { isFirebaseConfigured } from '../firebase'
 import './Login.css'
 
-function Login() {
+/**
+ * @param {{ onVolverInicio?: () => void }} props
+ */
+function Login({ onVolverInicio }) {
   const { signInWithGoogle, signInWithGooglePopup, signInAsGuest, authError, clearAuthError } = useAuth()
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -38,6 +41,15 @@ function Login() {
   return (
     <div className="login-page">
       <div className="login-card">
+        {onVolverInicio && (
+          <button
+            type="button"
+            className="login-volver"
+            onClick={onVolverInicio}
+          >
+            ← Inicio
+          </button>
+        )}
         <h1 className="login-title">⚽ Bondiola FC</h1>
         <p className="login-subtitle">Fútbol en dos cómodas cuotas</p>
 

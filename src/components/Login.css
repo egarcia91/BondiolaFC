@@ -17,6 +17,24 @@
   border: 1px solid var(--border-color);
 }
 
+.login-volver {
+  display: block;
+  margin: 0 0 1rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.login-volver:hover {
+  color: var(--primary-color);
+}
+
 .login-title {
   font-size: 2rem;
   font-weight: 700;
