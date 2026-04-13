@@ -7,34 +7,20 @@ import './Login.css'
  * @param {{ onVolverInicio?: () => void }} props
  */
 function Login({ onVolverInicio }) {
-  const { signInWithGoogle, signInWithGooglePopup, signInAsGuest, authError, clearAuthError } = useAuth()
+  const { signInWithGooglePopup, authError, clearAuthError } = useAuth()
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [loadingPopup, setLoadingPopup] = useState(false)
+  const [loadingGoogle, setLoadingGoogle] = useState(false)
 
   const handleGoogleSignIn = async () => {
     setError('')
     clearAuthError()
-    setLoading(true)
-    try {
-      await signInWithGoogle()
-    } catch (err) {
-      setError(err.message || 'No se pudo iniciar sesión con Google.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleGoogleSignInPopup = async () => {
-    setError('')
-    clearAuthError()
-    setLoadingPopup(true)
+    setLoadingGoogle(true)
     try {
       await signInWithGooglePopup()
     } catch (err) {
       setError(err.message || 'No se pudo iniciar sesión con Google.')
     } finally {
-      setLoadingPopup(false)
+      setLoadingGoogle(false)
     }
   }
 
@@ -50,55 +36,30 @@ function Login({ onVolverInicio }) {
             ← Inicio
           </button>
         )}
-        <h1 className="login-title">⚽ Bondiola FC</h1>
-        <p className="login-subtitle">Fútbol en dos cómodas cuotas</p>
-
-        <p className="login-text">Ingresá para ver jugadores y partidos.</p>
+        <h1 className="login-title">Cable a Tierra</h1>
+        <p className="login-subtitle">¡Logueate para ver tus organizaciones!</p>
 
         {isFirebaseConfigured && (
-          <>
-            <button
-              type="button"
-              className="login-btn login-btn-google"
-              onClick={handleGoogleSignIn}
-              disabled={loading || loadingPopup}
-            >
-              {loading ? (
-                <span>Entrando…</span>
-              ) : (
-                <>
-                  <span className="login-btn-icon">G</span>
-                  Continuar con Google
-                </>
-              )}
-            </button>
-            <button
-              type="button"
-              className="login-btn login-btn-sec"
-              onClick={handleGoogleSignInPopup}
-              disabled={loading || loadingPopup}
-              style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}
-            >
-              {loadingPopup ? 'Entrando…' : 'Probar con ventana emergente'}
-            </button>
-            <div className="login-divider">
-              <span>o</span>
-            </div>
-          </>
+          <button
+            type="button"
+            className="login-btn login-btn-google"
+            onClick={handleGoogleSignIn}
+            disabled={loadingGoogle}
+          >
+            {loadingGoogle ? (
+              <span>Entrando…</span>
+            ) : (
+              <>
+                <span className="login-btn-icon">G</span>
+                Continuar con Google
+              </>
+            )}
+          </button>
         )}
 
         {!isFirebaseConfigured && (
           <p className="login-hint">Configurá Firebase (archivo .env) para habilitar inicio con Google.</p>
         )}
-
-        <button
-          type="button"
-          className="login-btn login-btn-guest"
-          onClick={signInAsGuest}
-          disabled={loading}
-        >
-          Entrar como invitado
-        </button>
 
         {error && <p className="login-error">{error}</p>}
         {authError && <p className="login-error" role="alert">{authError}</p>}

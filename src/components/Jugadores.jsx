@@ -31,6 +31,14 @@ const RATIO_DESKTOP_LABEL = {
   derrotas_partido: 'Derrotas por partido',
 }
 
+/** Totales V / D / E para mostrar en tarjetas y detalle móvil. */
+function formatoRecordVDE(j) {
+  const v = j.victorias ?? 0
+  const d = j.partidosPerdidos ?? 0
+  const e = j.partidosEmpatados ?? 0
+  return `${v} / ${d} / ${e}`
+}
+
 function ratioPorPartido(j, tipo) {
   const p = j.partidos ?? 0
   if (p <= 0) return 0
@@ -306,7 +314,11 @@ function Jugadores({ organizacionId, isAdmin }) {
       lista = lista.filter((j) => j.posicion === filtroPosicion)
     }
     if (ordenPor !== 'ninguno') {
-      lista = lista.filter((j) => (j.partidos ?? 0) > 0)
+      if (ordenPor === 'presentes' && ultimosPartidosVentana > 0) {
+        lista = lista.filter((j) => (presenciasUltimosMap.get(j.id) ?? 0) > 0)
+      } else {
+        lista = lista.filter((j) => (j.partidos ?? 0) > 0)
+      }
     }
     if (ordenPor === 'ninguno') {
       // Solo filtro por posición; sin reordenar (orden de Firestore)
@@ -316,18 +328,12 @@ function Jugadores({ organizacionId, isAdmin }) {
       lista.sort((a, b) => b.goles - a.goles)
     } else if (ordenPor === 'ranking') {
       lista.sort((a, b) => (b.elo ?? 900) - (a.elo ?? 900))
-    } else if (ordenPor === 'presentes' && partidosNormalized.length > 0) {
-      const ultimo = partidosNormalized[0]
-      const presentes = new Set([
-        ...(ultimo.equipoLocal?.jugadores ?? []).map((e) => e?.id).filter(Boolean),
-        ...(ultimo.equipoVisitante?.jugadores ?? []).map((e) => e?.id).filter(Boolean),
-      ])
+    } else if (ordenPor === 'presentes' && ultimosPartidosVentana > 0) {
       lista.sort((a, b) => {
-        const aJugo = presentes.has(a.id)
-        const bJugo = presentes.has(b.id)
-        if (aJugo && !bJugo) return -1
-        if (!aJugo && bJugo) return 1
-        return b.partidos - a.partidos
+        const pa = presenciasUltimosMap.get(a.id) ?? 0
+        const pb = presenciasUltimosMap.get(b.id) ?? 0
+        if (pb !== pa) return pb - pa
+        return (b.partidos ?? 0) - (a.partidos ?? 0)
       })
     } else if (ordenPor === 'goles_partido') {
       lista.sort((a, b) => ratioPorPartido(b, 'goles_partido') - ratioPorPartido(a, 'goles_partido'))
@@ -345,7 +351,7 @@ function Jugadores({ organizacionId, isAdmin }) {
       )
     }
     return lista
-  }, [jugadores, partidosNormalized, filtroPosicion, ordenPor])
+  }, [jugadores, partidosNormalized, filtroPosicion, ordenPor, presenciasUltimosMap, ultimosPartidosVentana])
 
   /** Métrica principal en vista escritorio (tarjetas): clase stat-item--highlight + extras. */
   const metricaDesktopDestacada = useMemo(() => {
@@ -735,9 +741,17 @@ function Jugadores({ organizacionId, isAdmin }) {
                     <span className="stat-label">Partidos:</span>
                     <span className="stat-value">{jugador.partidos}</span>
                   </div>
-                  <div className={statDesktopClass('victorias')}>
-                    <span className="stat-label">Victorias:</span>
-                    <span className="stat-value stat-success">{jugador.victorias}</span>
+                  <div
+                    className={statDesktopClass(
+                      ['victorias_partido', 'empates_partido', 'derrotas_partido'].includes(ordenPor)
+                        ? ordenPor
+                        : 'victorias'
+                    )}
+                  >
+                    <span className="stat-label">Victorias / Derrotas / Empates</span>
+                    <span className="stat-value stat-value--record-vde" title="Victorias / Derrotas / Empates">
+                      {formatoRecordVDE(jugador)}
+                    </span>
                   </div>
                   <div className={statDesktopClass('goles')}>
                     <span className="stat-label">Goles:</span>
@@ -890,7 +904,10 @@ function Jugadores({ organizacionId, isAdmin }) {
                     <span className="jugador-posicion">{jugador.posicion}</span>
                     <div className="jugador-list-stats">
                       <p><strong>Partidos:</strong> {jugador.partidos}</p>
-                      <p><strong>Victorias:</strong> {jugador.victorias}</p>
+                      <p title="Victorias / Derrotas / Empates">
+                        <strong>Vic/Der/Emp:</strong>{' '}
+                        <span className="jugador-list-record-vde">{formatoRecordVDE(jugador)}</span>
+                      </p>
                       <p><strong>Goles:</strong> {jugador.goles}</p>
                       <p className="jugador-list-stat-elo-wrap">
                         <button

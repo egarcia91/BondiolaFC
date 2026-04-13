@@ -76,22 +76,23 @@ export function OrgProvider({ children, user }) {
   const refreshOrganizaciones = useCallback(() => {
     if (isGuest) {
       setErrorOrgs(null)
-      getOrganizaciones().then((list) => {
-        setOrganizaciones(list)
-        const saved = localStorage.getItem(ORG_STORAGE_KEY)
-        if (saved && list.some((o) => o.id === saved)) setCurrentOrgIdState(saved)
-        else if (list.length === 1) {
-          setCurrentOrgIdState(list[0].id)
-          localStorage.setItem(ORG_STORAGE_KEY, list[0].id)
-        }
-      }).catch((err) => {
-        setOrganizaciones([])
-        setErrorOrgs(err?.message || 'Error al cargar')
-      })
-      return
+      return getOrganizaciones()
+        .then((list) => {
+          setOrganizaciones(list)
+          const saved = localStorage.getItem(ORG_STORAGE_KEY)
+          if (saved && list.some((o) => o.id === saved)) setCurrentOrgIdState(saved)
+          else if (list.length === 1) {
+            setCurrentOrgIdState(list[0].id)
+            localStorage.setItem(ORG_STORAGE_KEY, list[0].id)
+          }
+        })
+        .catch((err) => {
+          setOrganizaciones([])
+          setErrorOrgs(err?.message || 'Error al cargar')
+        })
     }
-    if (!isGoogle || !uid) return
-    getOrganizacionesForUser(uid, email).then((list) => {
+    if (!isGoogle || !uid) return Promise.resolve()
+    return getOrganizacionesForUser(uid, email).then((list) => {
       setOrganizaciones(list)
       const saved = localStorage.getItem(ORG_STORAGE_KEY)
       if (saved && list.some((o) => o.id === saved)) setCurrentOrgIdState(saved)

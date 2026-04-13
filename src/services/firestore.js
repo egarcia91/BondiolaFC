@@ -5,6 +5,7 @@ const JUGADORES = 'jugadores'
 const PARTIDOS = 'partidos'
 const ORGANIZACIONES = 'organizaciones'
 const INVITACIONES = 'invitaciones'
+const DEPORTE_DEFAULT = 'Futbol'
 
 /** Normaliza nombre para comparar (minúsculas, sin acentos). */
 function normalizeName(s) {
@@ -14,6 +15,19 @@ function normalizeName(s) {
     .toLowerCase()
     .normalize('NFD')
     .replace(/\p{Mark}/gu, '')
+}
+
+function normalizeDeporte(deporte) {
+  const value = (deporte || '').trim()
+  return value || DEPORTE_DEFAULT
+}
+
+function normalizeOrganizacion(org) {
+  if (!org) return org
+  return {
+    ...org,
+    deporte: normalizeDeporte(org.deporte),
+  }
 }
 
 /**
@@ -834,13 +848,27 @@ export async function updateJugadorPerfil(jugadorId, data) {
 export async function getOrganizaciones() {
   if (!db) return []
   const snap = await getDocs(collection(db, ORGANIZACIONES))
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+  return snap.docs.map((d) => normalizeOrganizacion({ id: d.id, ...d.data() }))
+}
+
+/**
+ * Suma de goles marcados en un partido (local + visitante).
+ * @param {{ equipoLocal?: { goles?: number }, equipoVisitante?: { goles?: number } }} p
+ * @returns {number}
+ */
+function golesTotalesEnPartido(p) {
+  const gl = Number(p?.equipoLocal?.goles)
+  const gv = Number(p?.equipoVisitante?.goles)
+  const local = Number.isFinite(gl) ? gl : 0
+  const visit = Number.isFinite(gv) ? gv : 0
+  return local + visit
 }
 
 /**
  * Datos públicos para la pantalla de inicio: organizaciones con conteo de jugadores
- * que jugaron al menos un partido y partidos concluidos. Una sola ronda de lecturas.
- * @returns {Promise<{ organizaciones: Array, statsPorId: Record<string, { jugadoresActivos: number, partidosJugados: number }> }>}
+ * que jugaron al menos un partido, partidos concluidos y suma de goles (local + visitante) en todos los partidos de la organización.
+ * Una sola ronda de lecturas.
+ * @returns {Promise<{ organizaciones: Array, statsPorId: Record<string, { jugadoresActivos: number, partidosJugados: number, golesTotales: number }> }>}
  */
 export async function getResumenPublicoOrganizaciones() {
   if (!db) {
@@ -852,7 +880,7 @@ export async function getResumenPublicoOrganizaciones() {
     getPartidos(null),
   ])
   const statsPorId = Object.fromEntries(
-    organizaciones.map((o) => [o.id, { jugadoresActivos: 0, partidosJugados: 0 }])
+    organizaciones.map((o) => [o.id, { jugadoresActivos: 0, partidosJugados: 0, golesTotales: 0 }])
   )
   for (const j of jugadores) {
     const oid = j.organizacionId
@@ -863,6 +891,7 @@ export async function getResumenPublicoOrganizaciones() {
     const oid = p.organizacionId
     if (oid == null || oid === '' || statsPorId[oid] == null) continue
     if (p.concluido === true) statsPorId[oid].partidosJugados += 1
+    statsPorId[oid].golesTotales += golesTotalesEnPartido(p)
   }
   const organizacionesOrdenadas = [...organizaciones].sort((a, b) =>
     (a.nombre || a.id || '').localeCompare(b.nombre || b.id || '', 'es', { sensitivity: 'base' })
@@ -874,7 +903,7 @@ export async function getOrganizacion(organizacionId) {
   if (!db || !organizacionId) return null
   const snap = await getDoc(doc(db, ORGANIZACIONES, organizacionId))
   if (!snap.exists()) return null
-  return { id: snap.id, ...snap.data() }
+  return normalizeOrganizacion({ id: snap.id, ...snap.data() })
 }
 
 function generarCodigoInvitacion() {
@@ -888,7 +917,7 @@ export async function getOrganizacionesForUser(uid, email) {
   if (!db || !uid) return []
   const col = collection(db, ORGANIZACIONES)
   const creadas = await getDocs(query(col, where('creadoPor', '==', uid)))
-  const porCreacion = creadas.docs.map((d) => ({ id: d.id, ...d.data() }))
+  const porCreacion = creadas.docs.map((d) => normalizeOrganizacion({ id: d.id, ...d.data() }))
   const orgIds = new Set(porCreacion.map((o) => o.id))
   if (email) {
     const emailNorm = (email || '').trim().toLowerCase()
@@ -904,7 +933,7 @@ export async function getOrganizacionesForUser(uid, email) {
         if (orgId && !orgIds.has(orgId)) {
           orgIds.add(orgId)
           const orgSnap = await getDoc(doc(db, ORGANIZACIONES, orgId))
-          if (orgSnap.exists()) porCreacion.push({ id: orgSnap.id, ...orgSnap.data() })
+          if (orgSnap.exists()) porCreacion.push(normalizeOrganizacion({ id: orgSnap.id, ...orgSnap.data() }))
         }
       }
     }
@@ -912,11 +941,12 @@ export async function getOrganizacionesForUser(uid, email) {
   return porCreacion
 }
 
-export async function createOrganizacion(nombre, creadoPor) {
+export async function createOrganizacion(nombre, creadoPor, deporte = DEPORTE_DEFAULT) {
   if (!db) throw new Error('Firestore no está configurado')
   const slug = (nombre || '').trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
   const ref = await addDoc(collection(db, ORGANIZACIONES), {
     nombre: (nombre || '').trim() || 'Nueva organización',
+    deporte: normalizeDeporte(deporte),
     slug: slug || null,
     creadoPor: creadoPor || '',
     creadoEn: new Date(),

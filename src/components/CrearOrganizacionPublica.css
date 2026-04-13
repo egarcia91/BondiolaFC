@@ -1,0 +1,153 @@
+.crear-org-pub {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1.25rem 3rem;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+}
+
+.crear-org-pub-inner {
+  width: 100%;
+  max-width: 440px;
+}
+
+.crear-org-pub-volver {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.35rem 0;
+  border: none;
+  background: none;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.crear-org-pub-volver:hover {
+  color: #fff;
+}
+
+.crear-org-pub-header {
+  text-align: center;
+  color: #fff;
+  margin-bottom: 1.25rem;
+}
+
+.crear-org-pub-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.65rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.crear-org-pub-subtitle {
+  margin: 0;
+  font-size: 0.95rem;
+  opacity: 0.92;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.crear-org-pub-card {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 1.35rem 1.35rem 1.5rem;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
+}
+
+.crear-org-pub-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.crear-org-pub-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-top: 0.15rem;
+}
+
+.crear-org-pub-input {
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 1rem;
+  background: var(--bg-color);
+  color: var(--text-primary);
+}
+
+.crear-org-pub-input:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 1px;
+}
+
+.crear-org-pub-error {
+  margin: 0.25rem 0 0;
+  font-size: 0.88rem;
+  color: var(--danger-color);
+}
+
+.crear-org-pub-hint {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+.crear-org-pub-btn {
+  margin-top: 0.5rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.crear-org-pub-btn-google {
+  background: #fff;
+  color: #1f2937;
+  border: 2px solid rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow);
+}
+
+.crear-org-pub-btn-google:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.crear-org-pub-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 4px;
+  background: #4285f4;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.crear-org-pub-btn-sec {
+  margin-top: 0.35rem;
+  background: transparent;
+  color: var(--primary-color);
+  border: 2px solid color-mix(in srgb, var(--primary-color) 45%, transparent);
+  font-size: 0.9rem;
+}
+
+.crear-org-pub-btn-sec:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

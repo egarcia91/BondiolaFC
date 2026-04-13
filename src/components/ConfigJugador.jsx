@@ -4,7 +4,27 @@ import './ConfigJugador.css'
 
 const POSICIONES = ['Delantero', 'Defensor', 'Mediocampista', 'Arquero']
 
-function ConfigJugador({ userEmail, organizacionId, onClose, onSaved, onCerrarSesion, onEquipoPreview }) {
+/**
+ * @param {{
+ *   userEmail: string,
+ *   organizacionId: string,
+ *   onClose: () => void,
+ *   onSaved?: (equipoFavorito?: string) => void,
+ *   onCerrarSesion?: () => void,
+ *   onEquipoPreview?: (equipo: 'azul' | 'rojo') => void,
+ *   onAbrirInvitar?: () => void,
+ * }} props
+ */
+
+function ConfigJugador({
+  userEmail,
+  organizacionId,
+  onClose,
+  onSaved,
+  onCerrarSesion,
+  onEquipoPreview,
+  onAbrirInvitar,
+}) {
   const [jugadores, setJugadores] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -187,6 +207,22 @@ function ConfigJugador({ userEmail, organizacionId, onClose, onSaved, onCerrarSe
               rows={3}
             />
           </label>
+
+          {jugador.admin === true && onAbrirInvitar && (
+            <div className="config-admin-invite">
+              <p className="config-admin-invite-title">Invitaciones</p>
+              <p className="config-admin-invite-desc">
+                Generá un código para que otras personas se sumen a esta organización.
+              </p>
+              <button
+                type="button"
+                className="config-btn config-btn-outline config-btn-full"
+                onClick={onAbrirInvitar}
+              >
+                Invitar a la organización
+              </button>
+            </div>
+          )}
 
           {error && <p className="config-error">{error}</p>}
 

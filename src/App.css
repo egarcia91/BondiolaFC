@@ -135,41 +135,6 @@
   font-weight: 300;
 }
 
-.app-header-stats {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.65rem 1.1rem;
-  margin-top: 1rem;
-}
-
-.app-header-stat {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.4rem;
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  font-size: 0.95rem;
-  font-weight: 600;
-}
-
-.app-header-stat-label {
-  font-weight: 600;
-  opacity: 0.95;
-  text-transform: uppercase;
-  font-size: 0.7rem;
-  letter-spacing: 0.06em;
-}
-
-.app-header-stat-value {
-  font-size: 1.15rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-
 .theme-toggle {
   flex-shrink: 0;
   width: 28px;
@@ -203,7 +168,11 @@
 }
 
 .nav-button {
-  padding: 0.75rem 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.65rem 1.35rem;
   font-size: 1rem;
   font-weight: 600;
   border: 2px solid var(--primary-color);
@@ -211,19 +180,37 @@
   color: var(--primary-color);
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.nav-button:hover {
+.nav-button-label {
+  line-height: 1.2;
+}
+
+.nav-button-count {
+  font-size: 1.05rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  min-width: 1.35em;
+  text-align: center;
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--primary-color) 14%, transparent);
+}
+
+.nav-button:hover,
+.nav-button.active {
   background-color: var(--primary-color);
   color: white;
   transform: translateY(-2px);
   box-shadow: var(--shadow);
 }
 
-.nav-button.active {
-  background-color: var(--primary-color);
-  color: white;
+.nav-button:hover .nav-button-count,
+.nav-button.active .nav-button-count {
+  background: rgba(255, 255, 255, 0.22);
+  color: inherit;
 }
 
 .app-main {
@@ -283,20 +270,6 @@
     font-size: 2rem;
   }
 
-  .app-header-stats {
-    justify-content: center;
-    margin-top: 0.75rem;
-  }
-
-  .app-header-stat {
-    font-size: 0.88rem;
-    padding: 0.3rem 0.65rem;
-  }
-
-  .app-header-stat-value {
-    font-size: 1.05rem;
-  }
-
   .theme-toggle {
     width: 26px;
     height: 26px;
@@ -310,6 +283,9 @@
 
   .nav-button {
     width: 100%;
+    justify-content: space-between;
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 
   .app-main {

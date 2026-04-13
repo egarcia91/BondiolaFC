@@ -47,13 +47,6 @@
   font-size: 1rem;
   color: var(--text-secondary);
   text-align: center;
-  margin-bottom: 2rem;
-}
-
-.login-text {
-  font-size: 0.95rem;
-  color: var(--text-secondary);
-  text-align: center;
   margin-bottom: 1.5rem;
 }
 
@@ -90,39 +83,6 @@
 .login-btn-google .login-btn-icon {
   font-weight: 700;
   color: #4285f4;
-}
-
-.login-btn-guest {
-  background: var(--bg-color);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-}
-
-.login-btn-sec {
-  background: transparent;
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color);
-  font-weight: 500;
-}
-
-.login-divider {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin: 1.5rem 0;
-}
-
-.login-divider::before,
-.login-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border-color);
-}
-
-.login-divider span {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
 }
 
 .login-hint {

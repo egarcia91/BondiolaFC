@@ -393,6 +393,11 @@
   color: var(--text-primary);
 }
 
+.stat-value--record-vde {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+}
+
 .stat-success {
   color: var(--success-color);
 }
@@ -875,6 +880,10 @@
 
   .jugador-list-stats p {
     margin: 0;
+  }
+
+  .jugador-list-record-vde {
+    font-variant-numeric: tabular-nums;
   }
 
   .jugador-list-item-detail .jugador-descripcion {

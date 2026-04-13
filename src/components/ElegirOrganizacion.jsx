@@ -1,15 +1,26 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useOrg } from '../contexts/OrgContext'
-import { createOrganizacion, getOrganizaciones, addJugador, getJugadorByEmail } from '../services/firestore'
+import { createOrganizacion, getOrganizaciones, addJugador, getJugadorByEmail, getResumenPublicoOrganizaciones } from '../services/firestore'
+import { deporteEsFutbol, deporteTextoLista, deporteAbreviatura } from '../utils/deporte'
 import './ElegirOrganizacion.css'
+
+const DEPORTES_PRESET = ['Futbol', 'Padel', 'Tenis', 'Basquet', 'Voley', 'Otro']
 
 function ElegirOrganizacion({ user, onCrearOrganizacion, onUnirseConCodigo, onElegida }) {
   const { organizaciones, currentOrgId, setCurrentOrgId, loading, refreshOrganizaciones, errorOrgs } = useOrg()
   const [creando, setCreando] = useState(false)
   const [nombreNueva, setNombreNueva] = useState('')
+  const [deporteNueva, setDeporteNueva] = useState('Futbol')
+  const [deportePersonalizado, setDeportePersonalizado] = useState('')
   const [error, setError] = useState('')
   const [orgParaUnirse, setOrgParaUnirse] = useState(null)
   const [entrando, setEntrando] = useState(false)
+  const [statsPorOrg, setStatsPorOrg] = useState(null)
+
+  const orgIdsKey = useMemo(
+    () => organizaciones.map((o) => o.id).sort().join(','),
+    [organizaciones]
+  )
 
   const uid = user?.uid ?? ''
   const email = user?.email ?? ''
@@ -27,6 +38,24 @@ function ElegirOrganizacion({ user, onCrearOrganizacion, onUnirseConCodigo, onEl
       setOrgParaUnirse(null)
     }
   }, [loading, organizaciones.length, user?.type])
+
+  useEffect(() => {
+    if (loading || organizaciones.length === 0) {
+      setStatsPorOrg(null)
+      return
+    }
+    let cancelled = false
+    getResumenPublicoOrganizaciones()
+      .then(({ statsPorId }) => {
+        if (!cancelled) setStatsPorOrg(statsPorId)
+      })
+      .catch(() => {
+        if (!cancelled) setStatsPorOrg({})
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [loading, orgIdsKey])
 
   const handleEntrarAOrg = async () => {
     if (!orgParaUnirse?.id || !uid || !email) return
@@ -75,10 +104,15 @@ function ElegirOrganizacion({ user, onCrearOrganizacion, onUnirseConCodigo, onEl
   const handleCrear = async (e) => {
     e.preventDefault()
     if (!nombreNueva.trim()) return
+    const deporteElegido = deporteNueva === 'Otro' ? deportePersonalizado.trim() : deporteNueva
+    if (!deporteElegido) {
+      setError('Elegí o ingresá un deporte')
+      return
+    }
     setError('')
     setCreando(true)
     try {
-      const orgId = await createOrganizacion(nombreNueva.trim(), uid)
+      const orgId = await createOrganizacion(nombreNueva.trim(), uid, deporteElegido)
       setCurrentOrgId(orgId)
       onCrearOrganizacion?.(orgId)
       onElegida?.()
@@ -146,22 +180,74 @@ function ElegirOrganizacion({ user, onCrearOrganizacion, onUnirseConCodigo, onEl
 
         {tieneAlguna && (
           <div className="elegir-org-lista">
-            <label className="elegir-org-label">
+            <label className="elegir-org-label" id="elegir-org-lista-label">
               {esInvitado ? 'Organizaciones' : 'Tus organizaciones'}
             </label>
-            {organizaciones.map((org) => (
-              <button
-                key={org.id}
-                type="button"
-                className={`elegir-org-item ${currentOrgId === org.id ? 'elegir-org-item--activa' : ''}`}
-                onClick={() => {
-                  setCurrentOrgId(org.id)
-                  onElegida?.()
-                }}
-              >
-                <span className="elegir-org-item-nombre">{org.nombre || org.id}</span>
-              </button>
-            ))}
+            <div className="elegir-org-org-table" aria-labelledby="elegir-org-lista-label">
+              <div className="elegir-org-grid elegir-org-grid--header" aria-hidden="true">
+                <span className="elegir-org-th elegir-org-th--deporte">Dep.</span>
+                <span className="elegir-org-th elegir-org-th--nombre">Organización</span>
+                <span className="elegir-org-th elegir-org-th--num">Jugadores</span>
+                <span className="elegir-org-th elegir-org-th--num">Partidos</span>
+                <span className="elegir-org-th elegir-org-th--num">Goles</span>
+              </div>
+              <ul className="elegir-org-org-list">
+                {organizaciones.map((org) => {
+                  const nombreOrg = org.nombre || org.id
+                  const deporteOrg = org.deporte || 'Futbol'
+                  const esFutbol = deporteEsFutbol(deporteOrg)
+                  const stats = statsPorOrg?.[org.id]
+                  const jug = statsPorOrg == null ? null : (stats?.jugadoresActivos ?? 0)
+                  const part = statsPorOrg == null ? null : (stats?.partidosJugados ?? 0)
+                  const gol = statsPorOrg == null ? null : (stats?.golesTotales ?? 0)
+                  const ariaLabelBtn = esFutbol
+                    ? `Elegir ${nombreOrg}`
+                    : `Elegir ${nombreOrg}, ${deporteTextoLista(deporteOrg)}`
+                  return (
+                    <li key={org.id} className="elegir-org-li">
+                      <button
+                        type="button"
+                        className={`elegir-org-item elegir-org-grid ${currentOrgId === org.id ? 'elegir-org-item--activa' : ''}`}
+                        onClick={() => {
+                          setCurrentOrgId(org.id)
+                          onElegida?.()
+                        }}
+                        aria-label={ariaLabelBtn}
+                      >
+                        <span
+                          className="elegir-org-col-deporte"
+                          title={esFutbol ? 'Fútbol' : deporteTextoLista(deporteOrg)}
+                        >
+                          {esFutbol ? (
+                            <span className="elegir-org-item-ball" role="img" aria-label="Fútbol">⚽</span>
+                          ) : (
+                            <span className="elegir-org-deporte-texto">{deporteAbreviatura(deporteOrg)}</span>
+                          )}
+                        </span>
+                        <span className="elegir-org-col-nombre" title={nombreOrg}>
+                          {nombreOrg}
+                        </span>
+                        <span
+                          className="elegir-org-col-num"
+                          title="Jugadores que jugaron al menos un partido"
+                        >
+                          {jug === null ? '…' : jug}
+                        </span>
+                        <span className="elegir-org-col-num" title="Partidos con resultado cargado">
+                          {part === null ? '…' : part}
+                        </span>
+                        <span
+                          className="elegir-org-col-num"
+                          title="Suma de goles de ambos equipos en todos los partidos de la organización"
+                        >
+                          {gol === null ? '…' : gol}
+                        </span>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
           </div>
         )}
 
@@ -191,9 +277,40 @@ function ElegirOrganizacion({ user, onCrearOrganizacion, onUnirseConCodigo, onEl
                 className="elegir-org-input"
                 autoFocus
               />
+              <label className="elegir-org-field-label" htmlFor="deporte-select">
+                Deporte
+              </label>
+              <select
+                id="deporte-select"
+                className="elegir-org-input"
+                value={deporteNueva}
+                onChange={(e) => setDeporteNueva(e.target.value)}
+              >
+                {DEPORTES_PRESET.map((deporte) => (
+                  <option key={deporte} value={deporte}>{deporte}</option>
+                ))}
+              </select>
+              {deporteNueva === 'Otro' && (
+                <input
+                  type="text"
+                  value={deportePersonalizado}
+                  onChange={(e) => setDeportePersonalizado(e.target.value)}
+                  placeholder="Ej. Hockey"
+                  className="elegir-org-input"
+                />
+              )}
               {error && <p className="elegir-org-error">{error}</p>}
               <div className="elegir-org-form-actions">
-                <button type="button" className="elegir-org-btn elegir-org-btn-sec" onClick={() => { setCreando(false); setError('') }}>
+                <button
+                  type="button"
+                  className="elegir-org-btn elegir-org-btn-sec"
+                  onClick={() => {
+                    setCreando(false)
+                    setError('')
+                    setDeporteNueva('Futbol')
+                    setDeportePersonalizado('')
+                  }}
+                >
                   Cancelar
                 </button>
                 <button type="submit" className="elegir-org-btn elegir-org-btn-primary" disabled={!nombreNueva.trim()}>

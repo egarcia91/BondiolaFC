@@ -1,9 +1,12 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from './contexts/AuthContext'
 import { useOrg } from './contexts/OrgContext'
 import { getJugadorByEmail, getJugadores, getPartidos } from './services/firestore'
 import Login from './components/Login'
 import PantallaInicio from './components/PantallaInicio'
+import CrearOrganizacionPublica from './components/CrearOrganizacionPublica'
+import WizardPrimeraOrganizacion from './components/WizardPrimeraOrganizacion'
+import { CREAR_ORG_PERFIL_KEY } from './constants/onboarding'
 import Jugadores from './components/Jugadores'
 import Partidos from './components/Partidos'
 import RegistroJugador from './components/RegistroJugador'
@@ -12,14 +15,48 @@ import ElegirOrganizacion from './components/ElegirOrganizacion'
 import UnirseConCodigoModal from './components/UnirseConCodigoModal'
 import InvitarModal from './components/InvitarModal'
 import { OrgProvider } from './contexts/OrgContext'
+import { deporteEsFutbol } from './utils/deporte'
 import './App.css'
 
 const THEME_KEY = 'bondiola-fc-theme'
 
+function PortadaSesionGoogle({ onCerrar }) {
+  const { setCurrentOrgId } = useOrg()
+  return (
+    <PantallaInicio
+      modoConSesion
+      onVolverAlPanel={onCerrar}
+      onSeleccionarOrganizacion={(orgId) => {
+        setCurrentOrgId(orgId)
+        onCerrar()
+      }}
+      onCrearOrganizacion={() => {
+        setCurrentOrgId(null)
+        onCerrar()
+      }}
+    />
+  )
+}
+
 function App() {
   const { user, loading, isAuthenticated } = useAuth()
   const [vistaAccesoPublico, setVistaAccesoPublico] = useState('inicio')
+  const [wizardPerfil, setWizardPerfil] = useState(null)
+  const [portadaDesdeSesion, setPortadaDesdeSesion] = useState(false)
   const eraAutenticadoRef = useRef(false)
+
+  const leerPerfilCrearOrg = useCallback(() => {
+    if (typeof sessionStorage === 'undefined') return null
+    try {
+      const raw = sessionStorage.getItem(CREAR_ORG_PERFIL_KEY)
+      if (!raw) return null
+      const p = JSON.parse(raw)
+      if (p?.nombre && p?.apellido && p?.fechaNacimiento) return p
+    } catch {
+      sessionStorage.removeItem(CREAR_ORG_PERFIL_KEY)
+    }
+    return null
+  }, [])
 
   useEffect(() => {
     if (eraAutenticadoRef.current && !isAuthenticated) {
@@ -27,6 +64,23 @@ function App() {
     }
     eraAutenticadoRef.current = isAuthenticated
   }, [isAuthenticated])
+
+  useEffect(() => {
+    if (!isAuthenticated) setPortadaDesdeSesion(false)
+  }, [isAuthenticated])
+
+  useEffect(() => {
+    if (!isAuthenticated || user?.type !== 'google') {
+      setWizardPerfil(null)
+      return
+    }
+    setWizardPerfil(leerPerfilCrearOrg())
+  }, [isAuthenticated, user, leerPerfilCrearOrg])
+
+  const handleWizardTerminado = useCallback(() => {
+    sessionStorage.removeItem(CREAR_ORG_PERFIL_KEY)
+    setWizardPerfil(null)
+  }, [])
 
   if (loading) {
     return (
@@ -38,19 +92,42 @@ function App() {
 
   if (!isAuthenticated) {
     if (vistaAccesoPublico === 'inicio') {
-      return <PantallaInicio onIngresar={() => setVistaAccesoPublico('login')} />
+      return (
+        <PantallaInicio
+          onCrearOrganizacion={() => setVistaAccesoPublico('crear-org')}
+          onIrALogin={() => setVistaAccesoPublico('login')}
+        />
+      )
+    }
+    if (vistaAccesoPublico === 'crear-org') {
+      return <CrearOrganizacionPublica onVolver={() => setVistaAccesoPublico('inicio')} />
     }
     return <Login onVolverInicio={() => setVistaAccesoPublico('inicio')} />
   }
 
+  if (user?.type === 'google' && wizardPerfil) {
+    return (
+      <OrgProvider user={user}>
+        <WizardPrimeraOrganizacion perfil={wizardPerfil} onTerminado={handleWizardTerminado} />
+      </OrgProvider>
+    )
+  }
+
   return (
     <OrgProvider user={user}>
-      <AppConOrg />
+      {portadaDesdeSesion ? (
+        <PortadaSesionGoogle onCerrar={() => setPortadaDesdeSesion(false)} />
+      ) : (
+        <AppConOrg onAbrirPortada={() => setPortadaDesdeSesion(true)} />
+      )}
     </OrgProvider>
   )
 }
 
-function AppConOrg() {
+/**
+ * @param {{ onAbrirPortada?: () => void }} props
+ */
+function AppConOrg({ onAbrirPortada }) {
   const { user, signOut, isAuthenticated } = useAuth()
   const { organizaciones, currentOrgId, currentOrg, setCurrentOrgId, loading: orgLoading } = useOrg()
   const [activeSection, setActiveSection] = useState('jugadores')
@@ -162,27 +239,27 @@ function AppConOrg() {
       <header className="app-header">
         <div className="app-header-content">
           <div className="app-header-title">
-            <h1><span className="header-ball" aria-hidden="true">⚽</span> {currentOrg?.nombre || 'Bondiola FC'}</h1>
-            <p className="subtitle">Futbol en dos cómodas cuotas</p>
-            <div className="app-header-stats" aria-live="polite">
-              <div
-                className="app-header-stat"
-                title="Jugadores de la organización que jugaron al menos un partido"
-              >
-                <span className="app-header-stat-label">Jugadores</span>
-                <span className="app-header-stat-value">
-                  {orgStats.jugadoresActivos ?? '…'}
-                </span>
-              </div>
-              <div className="app-header-stat" title="Partidos con resultado cargado en la organización">
-                <span className="app-header-stat-label">Partidos</span>
-                <span className="app-header-stat-value">
-                  {orgStats.partidosJugados ?? '…'}
-                </span>
-              </div>
-            </div>
+            <h1>
+              {deporteEsFutbol(currentOrg?.deporte) && (
+                <>
+                  <span className="header-ball" aria-hidden="true">⚽</span>{' '}
+                </>
+              )}
+              {currentOrg?.nombre || 'Bondiola FC'}
+            </h1>
+            <p className="subtitle">Estadísticas de {currentOrg?.deporte || 'Futbol'} día a día</p>
           </div>
           <div className="app-header-actions">
+            {user?.type === 'google' && currentOrgId && onAbrirPortada && (
+              <button
+                type="button"
+                className="app-registro-btn"
+                onClick={onAbrirPortada}
+                title="Ver el inicio público y el listado de organizaciones"
+              >
+                Pantalla principal
+              </button>
+            )}
             {organizaciones.length > 1 && (
               <select
                 className="app-org-select"
@@ -195,16 +272,6 @@ function AppConOrg() {
                   <option key={org.id} value={org.id}>{org.nombre || org.id}</option>
                 ))}
               </select>
-            )}
-            {user?.type === 'google' && jugadorActual?.admin === true && (
-              <button
-                type="button"
-                className="app-registro-btn"
-                onClick={() => setShowInvitar(true)}
-                title="Generar código de invitación"
-              >
-                Invitar
-              </button>
             )}
             {user?.type === 'google' && (
               <>
@@ -255,18 +322,24 @@ function AppConOrg() {
         </div>
       </header>
 
-      <nav className="app-nav">
+      <nav className="app-nav" aria-live="polite">
         <button
+          type="button"
           className={`nav-button ${activeSection === 'jugadores' ? 'active' : ''}`}
           onClick={() => setActiveSection('jugadores')}
+          title="Jugadores de la organización que jugaron al menos un partido"
         >
-          Jugadores
+          <span className="nav-button-label">Jugadores</span>
+          <span className="nav-button-count">{orgStats.jugadoresActivos ?? '…'}</span>
         </button>
         <button
+          type="button"
           className={`nav-button ${activeSection === 'partidos' ? 'active' : ''}`}
           onClick={() => setActiveSection('partidos')}
+          title="Partidos con resultado cargado en la organización"
         >
-          Partidos
+          <span className="nav-button-label">Partidos</span>
+          <span className="nav-button-count">{orgStats.partidosJugados ?? '…'}</span>
         </button>
       </nav>
 
@@ -308,6 +381,15 @@ function AppConOrg() {
             setShowConfigModal(false)
             signOut()
           }}
+          onAbrirInvitar={
+            jugadorActual?.admin === true
+              ? () => {
+                  setEquipoPreview(null)
+                  setShowConfigModal(false)
+                  setShowInvitar(true)
+                }
+              : undefined
+          }
         />
       )}
       {showInvitar && (

@@ -15,7 +15,7 @@
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 1.5rem;
-  max-width: 400px;
+  max-width: 580px;
   width: 100%;
   box-shadow: var(--shadow-lg);
 }
@@ -42,17 +42,79 @@
   margin-bottom: 0.5rem;
 }
 
+.elegir-org-org-table {
+  --org-col-dep: 2.5rem;
+  --org-col-jug: 4.75rem;
+  --org-col-part: 4.75rem;
+  --org-col-gol: 4.75rem;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.elegir-org-grid {
+  display: grid;
+  grid-template-columns: var(--org-col-dep) minmax(0, 1fr) var(--org-col-jug) var(--org-col-part) var(--org-col-gol);
+  column-gap: 0.5rem;
+  align-items: center;
+  width: 100%;
+  min-width: min(100%, 18.5rem);
+}
+
+.elegir-org-grid--header {
+  padding: 0 0.75rem 0.4rem;
+  margin: 0 0 0.35rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.elegir-org-th {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  line-height: 1.2;
+}
+
+.elegir-org-th--deporte {
+  justify-self: center;
+  text-align: center;
+}
+
+.elegir-org-th--nombre {
+  min-width: 0;
+  padding-right: 0.15rem;
+}
+
+.elegir-org-th--num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.elegir-org-org-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.elegir-org-li {
+  margin: 0;
+  padding: 0;
+}
+
 .elegir-org-item {
-  display: block;
   width: 100%;
   text-align: left;
-  padding: 0.6rem 0.75rem;
-  margin-bottom: 0.35rem;
+  padding: 0.55rem 0.75rem;
+  margin: 0;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   background: var(--bg);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.95rem;
 }
 
 .elegir-org-item:hover {
@@ -64,8 +126,81 @@
   background: var(--primary-light, rgba(37, 99, 235, 0.1));
 }
 
-.elegir-org-item-nombre {
-  font-weight: 500;
+.elegir-org-col-deporte {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  width: var(--org-col-dep);
+  min-height: 1.85rem;
+}
+
+.elegir-org-item-ball {
+  flex-shrink: 0;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.elegir-org-deporte-texto {
+  display: block;
+  max-width: 100%;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.elegir-org-col-nombre {
+  min-width: 0;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 0.15rem;
+}
+
+.elegir-org-col-num {
+  justify-self: end;
+  text-align: right;
+  font-size: 0.95rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  min-width: 0;
+}
+
+@media (max-width: 420px) {
+  .elegir-org-org-table {
+    --org-col-dep: 2.25rem;
+    --org-col-jug: 4rem;
+    --org-col-part: 4rem;
+    --org-col-gol: 4rem;
+  }
+
+  .elegir-org-grid {
+    column-gap: 0.35rem;
+  }
+
+  .elegir-org-col-num {
+    font-size: 0.88rem;
+  }
+
+  .elegir-org-item {
+    padding-left: 0.55rem;
+    padding-right: 0.55rem;
+  }
+
+  .elegir-org-grid--header {
+    padding-left: 0.55rem;
+    padding-right: 0.55rem;
+  }
 }
 
 .elegir-org-btn {
@@ -116,6 +251,12 @@
   border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 1rem;
+}
+
+.elegir-org-field-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 600;
 }
 
 .elegir-org-error {
