@@ -177,3 +177,28 @@
   line-height: 1.45;
   color: var(--text-secondary);
 }
+
+.admin-eliminar-jugador-aviso {
+  margin: 0 0 0.75rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.admin-eliminar-jugador-aviso--fuerte {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.admin-eliminar-jugador-btn-peligro {
+  background: var(--danger-color, #dc2626);
+  color: #fff;
+}
+
+.admin-eliminar-jugador-btn-peligro:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.admin-eliminar-jugador-btn-peligro:disabled {
+  opacity: 0.55;
+}

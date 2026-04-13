@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { getJugadores, getPartidos, normalizePartidos } from '../services/firestore'
 import NuevoJugadorModal from './NuevoJugadorModal'
 import AdminEditarJugadorModal from './AdminEditarJugadorModal'
+import AdminEliminarJugadorModal from './AdminEliminarJugadorModal'
 import JugadorEloChart from './JugadorEloChart'
 import JugadorEloComparacionChart from './JugadorEloComparacionChart'
 import { serieEloParaGrafico } from '../utils/eloSerie'
@@ -193,6 +194,7 @@ function IconoEloGrafico() {
 }
 
 const TITLE_EDITAR_JUGADOR_ADMIN = 'Editar nombre, apodo y fecha de nacimiento'
+const TITLE_ELIMINAR_JUGADOR_ADMIN = 'Eliminar jugador de la organización'
 
 function IconoLapizEditar() {
   return (
@@ -207,6 +209,28 @@ function IconoLapizEditar() {
     >
       <path
         d="M17 3a2.85 2.85 0 114 4L8.5 19.5 3 21l1.5-5.5L17 3z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function IconoBasuraEliminar() {
+  return (
+    <svg
+      className="jugador-eliminar-admin-icon"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <path
+        d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-9 4v9a1 1 0 001 1h8a1 1 0 001-1v-9M10 11v6M14 11v6"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
@@ -233,6 +257,7 @@ function Jugadores({ organizacionId, isAdmin }) {
   const [eloGraficoJugadorId, setEloGraficoJugadorId] = useState(null)
   const [showNuevoJugadorModal, setShowNuevoJugadorModal] = useState(false)
   const [jugadorEditandoAdmin, setJugadorEditandoAdmin] = useState(null)
+  const [jugadorEliminandoAdmin, setJugadorEliminandoAdmin] = useState(null)
 
   const toggleEloGrafico = (jugadorId) => {
     setEloGraficoJugadorId((actual) => (actual === jugadorId ? null : jugadorId))
@@ -453,6 +478,26 @@ function Jugadores({ organizacionId, isAdmin }) {
     if (organizacionId) getJugadores(organizacionId).then(setJugadores).catch(() => {})
   }
 
+  const abrirEditarJugadorAdmin = (jugador) => {
+    setJugadorEliminandoAdmin(null)
+    setJugadorEditandoAdmin(jugador)
+  }
+
+  const abrirEliminarJugadorAdmin = (jugador) => {
+    setJugadorEditandoAdmin(null)
+    setJugadorEliminandoAdmin(jugador)
+  }
+
+  const handleJugadorEliminadoAdmin = (jugadorId) => {
+    setJugadorEliminandoAdmin(null)
+    setJugadorEditandoAdmin((ed) => (ed?.id === jugadorId ? null : ed))
+    setCompararIdA((a) => (a === jugadorId ? '' : a))
+    setCompararIdB((b) => (b === jugadorId ? '' : b))
+    setExpandidoId((e) => (e === jugadorId ? null : e))
+    setEloGraficoJugadorId((g) => (g === jugadorId ? null : g))
+    refreshJugadores()
+  }
+
   return (
     <div className="jugadores-container">
       <div className="jugadores-header">
@@ -482,6 +527,16 @@ function Jugadores({ organizacionId, isAdmin }) {
           jugador={jugadorEditandoAdmin}
           onClose={() => setJugadorEditandoAdmin(null)}
           onSaved={refreshJugadores}
+        />
+      )}
+
+      {isAdmin && jugadorEliminandoAdmin && organizacionId && (
+        <AdminEliminarJugadorModal
+          key={jugadorEliminandoAdmin.id}
+          jugador={jugadorEliminandoAdmin}
+          organizacionId={organizacionId}
+          onClose={() => setJugadorEliminandoAdmin(null)}
+          onEliminado={handleJugadorEliminadoAdmin}
         />
       )}
 
@@ -631,15 +686,26 @@ function Jugadores({ organizacionId, isAdmin }) {
                           </div>
                           <div className="jugadores-comparar-mini-footer">
                             {isAdmin && (
-                              <button
-                                type="button"
-                                className="jugador-btn-editar-admin"
-                                onClick={() => setJugadorEditandoAdmin(jugadorCompararA)}
-                                aria-label={TITLE_EDITAR_JUGADOR_ADMIN}
-                                title={TITLE_EDITAR_JUGADOR_ADMIN}
-                              >
-                                <IconoLapizEditar />
-                              </button>
+                              <div className="jugador-header-acciones-admin">
+                                <button
+                                  type="button"
+                                  className="jugador-btn-editar-admin"
+                                  onClick={() => abrirEditarJugadorAdmin(jugadorCompararA)}
+                                  aria-label={TITLE_EDITAR_JUGADOR_ADMIN}
+                                  title={TITLE_EDITAR_JUGADOR_ADMIN}
+                                >
+                                  <IconoLapizEditar />
+                                </button>
+                                <button
+                                  type="button"
+                                  className="jugador-btn-eliminar-admin"
+                                  onClick={() => abrirEliminarJugadorAdmin(jugadorCompararA)}
+                                  aria-label={TITLE_ELIMINAR_JUGADOR_ADMIN}
+                                  title={TITLE_ELIMINAR_JUGADOR_ADMIN}
+                                >
+                                  <IconoBasuraEliminar />
+                                </button>
+                              </div>
                             )}
                             <span className="jugador-posicion">{jugadorCompararA.posicion}</span>
                           </div>
@@ -662,15 +728,26 @@ function Jugadores({ organizacionId, isAdmin }) {
                           </div>
                           <div className="jugadores-comparar-mini-footer">
                             {isAdmin && (
-                              <button
-                                type="button"
-                                className="jugador-btn-editar-admin"
-                                onClick={() => setJugadorEditandoAdmin(jugadorCompararB)}
-                                aria-label={TITLE_EDITAR_JUGADOR_ADMIN}
-                                title={TITLE_EDITAR_JUGADOR_ADMIN}
-                              >
-                                <IconoLapizEditar />
-                              </button>
+                              <div className="jugador-header-acciones-admin">
+                                <button
+                                  type="button"
+                                  className="jugador-btn-editar-admin"
+                                  onClick={() => abrirEditarJugadorAdmin(jugadorCompararB)}
+                                  aria-label={TITLE_EDITAR_JUGADOR_ADMIN}
+                                  title={TITLE_EDITAR_JUGADOR_ADMIN}
+                                >
+                                  <IconoLapizEditar />
+                                </button>
+                                <button
+                                  type="button"
+                                  className="jugador-btn-eliminar-admin"
+                                  onClick={() => abrirEliminarJugadorAdmin(jugadorCompararB)}
+                                  aria-label={TITLE_ELIMINAR_JUGADOR_ADMIN}
+                                  title={TITLE_ELIMINAR_JUGADOR_ADMIN}
+                                >
+                                  <IconoBasuraEliminar />
+                                </button>
+                              </div>
                             )}
                             <span className="jugador-posicion">{jugadorCompararB.posicion}</span>
                           </div>
@@ -798,15 +875,26 @@ function Jugadores({ organizacionId, isAdmin }) {
                   </div>
                   <div className="jugador-header-derecha">
                     {isAdmin && (
-                      <button
-                        type="button"
-                        className="jugador-btn-editar-admin"
-                        onClick={() => setJugadorEditandoAdmin(jugador)}
-                        aria-label={TITLE_EDITAR_JUGADOR_ADMIN}
-                        title={TITLE_EDITAR_JUGADOR_ADMIN}
-                      >
-                        <IconoLapizEditar />
-                      </button>
+                      <div className="jugador-header-acciones-admin">
+                        <button
+                          type="button"
+                          className="jugador-btn-editar-admin"
+                          onClick={() => abrirEditarJugadorAdmin(jugador)}
+                          aria-label={TITLE_EDITAR_JUGADOR_ADMIN}
+                          title={TITLE_EDITAR_JUGADOR_ADMIN}
+                        >
+                          <IconoLapizEditar />
+                        </button>
+                        <button
+                          type="button"
+                          className="jugador-btn-eliminar-admin"
+                          onClick={() => abrirEliminarJugadorAdmin(jugador)}
+                          aria-label={TITLE_ELIMINAR_JUGADOR_ADMIN}
+                          title={TITLE_ELIMINAR_JUGADOR_ADMIN}
+                        >
+                          <IconoBasuraEliminar />
+                        </button>
+                      </div>
                     )}
                     <span className="jugador-posicion">{jugador.posicion}</span>
                   </div>
@@ -996,18 +1084,32 @@ function Jugadores({ organizacionId, isAdmin }) {
                 {expandidoId === jugador.id && (
                   <div className="jugador-list-item-detail">
                     {isAdmin && (
-                      <button
-                        type="button"
-                        className="jugador-btn-editar-admin jugador-btn-editar-admin--lista-movil"
-                        onClick={(ev) => {
-                          ev.stopPropagation()
-                          setJugadorEditandoAdmin(jugador)
-                        }}
-                        aria-label={TITLE_EDITAR_JUGADOR_ADMIN}
-                        title={TITLE_EDITAR_JUGADOR_ADMIN}
-                      >
-                        <IconoLapizEditar />
-                      </button>
+                      <div className="jugador-list-acciones-admin">
+                        <button
+                          type="button"
+                          className="jugador-btn-editar-admin"
+                          onClick={(ev) => {
+                            ev.stopPropagation()
+                            abrirEditarJugadorAdmin(jugador)
+                          }}
+                          aria-label={TITLE_EDITAR_JUGADOR_ADMIN}
+                          title={TITLE_EDITAR_JUGADOR_ADMIN}
+                        >
+                          <IconoLapizEditar />
+                        </button>
+                        <button
+                          type="button"
+                          className="jugador-btn-eliminar-admin"
+                          onClick={(ev) => {
+                            ev.stopPropagation()
+                            abrirEliminarJugadorAdmin(jugador)
+                          }}
+                          aria-label={TITLE_ELIMINAR_JUGADOR_ADMIN}
+                          title={TITLE_ELIMINAR_JUGADOR_ADMIN}
+                        >
+                          <IconoBasuraEliminar />
+                        </button>
+                      </div>
                     )}
                     {jugador.apodo && <p className="jugador-list-nombre">{jugador.nombre}</p>}
                     <span className="jugador-posicion">{jugador.posicion}</span>

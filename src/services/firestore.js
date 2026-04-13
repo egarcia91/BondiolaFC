@@ -924,6 +924,23 @@ export async function updateJugadorPerfil(jugadorId, data) {
   if (Object.keys(toUpdate).length) await updateDoc(ref, toUpdate)
 }
 
+/**
+ * Elimina el documento del jugador. Comprueba que pertenezca a la organización indicada.
+ * @param {string} jugadorId
+ * @param {string} organizacionId
+ */
+export async function eliminarJugadorDeOrganizacion(jugadorId, organizacionId) {
+  if (!db || !jugadorId || !organizacionId) throw new Error('Datos inválidos para eliminar al jugador.')
+  const ref = doc(db, JUGADORES, jugadorId)
+  const snap = await getDoc(ref)
+  if (!snap.exists()) throw new Error('El jugador ya no existe.')
+  const orgId = snap.data().organizacionId
+  if (orgId !== organizacionId) {
+    throw new Error('El jugador no pertenece a esta organización.')
+  }
+  await deleteDoc(ref)
+}
+
 export async function getOrganizaciones() {
   if (!db) return []
   const snap = await getDocs(collection(db, ORGANIZACIONES))
