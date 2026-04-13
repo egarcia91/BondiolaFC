@@ -22,11 +22,35 @@ function normalizeDeporte(deporte) {
   return value || DEPORTE_DEFAULT
 }
 
+const ORG_EQUIPO_LOCAL_DEFAULT = { nombreVisible: 'Rojo', hex: '#c62828' }
+const ORG_EQUIPO_VISITANTE_DEFAULT = { nombreVisible: 'Azul', hex: '#1565c0' }
+
+function normalizeHexColor(hex) {
+  if (!hex || typeof hex !== 'string') return ''
+  const t = hex.trim()
+  if (/^#[0-9A-Fa-f]{6}$/.test(t)) return t.toLowerCase()
+  return ''
+}
+
+/** @returns {{ nombreVisible: string, hex: string } | null} */
+function normalizeEquipoOrgColor(raw) {
+  if (!raw || typeof raw !== 'object') return null
+  const nombreVisible = String(raw.nombreVisible ?? '').trim()
+  const hex = normalizeHexColor(raw.hex ?? '')
+  if (!nombreVisible || !hex) return null
+  return { nombreVisible, hex }
+}
+
 function normalizeOrganizacion(org) {
   if (!org) return org
+  const el = normalizeEquipoOrgColor(org.equipoLocalColor) ?? ORG_EQUIPO_LOCAL_DEFAULT
+  const ev = normalizeEquipoOrgColor(org.equipoVisitanteColor) ?? ORG_EQUIPO_VISITANTE_DEFAULT
   return {
     ...org,
     deporte: normalizeDeporte(org.deporte),
+    frase: typeof org.frase === 'string' ? org.frase : '',
+    equipoLocalColor: el,
+    equipoVisitanteColor: ev,
   }
 }
 
@@ -216,6 +240,61 @@ export async function addJugador(jugador) {
     admin: data.admin === true,
   })
   return ref.id
+}
+
+/**
+ * Crea el jugador administrador (cuenta Google creadora) en la organización si aún no hay uno con ese mail.
+ * @param {string} organizacionId
+ * @param {{ uid: string, email: string, displayName?: string | null, type?: string }} user
+ * @param {{ nombre?: string, apellido?: string, fechaNacimiento?: string } | null} [perfilOpcional] - Datos extra del wizard de primera org
+ * @returns {Promise<string>} id del jugador creado o del ya existente
+ */
+export async function asegurarJugadorAdminCreador(organizacionId, user, perfilOpcional = null) {
+  if (!organizacionId || !user?.uid || !user?.email) {
+    throw new Error('No se puede registrar al administrador: faltan datos de sesión o de la organización.')
+  }
+  if (user.type != null && user.type !== 'google') {
+    throw new Error('Solo un usuario con Google puede ser administrador inicial.')
+  }
+  const mailTrim = (user.email || '').trim()
+  const ya = await getJugadorByEmail(mailTrim, organizacionId)
+  if (ya?.id) return ya.id
+
+  const perfil = perfilOpcional || {}
+  const nombreCompletoPerfil = `${perfil.nombre || ''} ${perfil.apellido || ''}`.trim()
+  const nombre =
+    nombreCompletoPerfil
+    || (user.displayName || '').trim()
+    || mailTrim
+  const apodoDesdePerfil = perfil.nombre && String(perfil.nombre).trim().split(/\s/)[0]
+  const apodo =
+    apodoDesdePerfil
+    || (user.displayName || '').trim().split(/\s/)[0]
+    || mailTrim.split('@')[0]
+    || 'Admin'
+  const fechaNacimiento = typeof perfil.fechaNacimiento === 'string' ? perfil.fechaNacimiento : ''
+
+  return addJugador({
+    organizacionId,
+    userId: user.uid,
+    nombre,
+    apodo: apodo || 'Admin',
+    mail: mailTrim,
+    posicion: '',
+    descripcion: '',
+    fechaNacimiento,
+    equipoFavorito: 'rojo',
+    partidos: 0,
+    victorias: 0,
+    partidosEmpatados: 0,
+    partidosPerdidos: 0,
+    goles: 0,
+    elo: 900,
+    eloHistorial: [],
+    mvp: 0,
+    registrado: true,
+    admin: true,
+  })
 }
 
 /**
@@ -941,12 +1020,52 @@ export async function getOrganizacionesForUser(uid, email) {
   return porCreacion
 }
 
-export async function createOrganizacion(nombre, creadoPor, deporte = DEPORTE_DEFAULT) {
+/**
+ * Crea una organización. Acepta la firma clásica (nombre, creadoPor, deporte) o un objeto con datos extendidos.
+ * @param {string | { nombre: string, creadoPor?: string, deporte?: string, frase?: string, equipoLocalColor?: { nombreVisible: string, hex: string }, equipoVisitanteColor?: { nombreVisible: string, hex: string } }} nombreOrPayload
+ * @param {string} [creadoPorArg]
+ * @param {string} [deporteArg]
+ */
+export async function createOrganizacion(nombreOrPayload, creadoPorArg = '', deporteArg = DEPORTE_DEFAULT) {
   if (!db) throw new Error('Firestore no está configurado')
-  const slug = (nombre || '').trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+
+  let nombre
+  let creadoPor
+  let deporte
+  let frase = ''
+  let equipoLocalColor = null
+  let equipoVisitanteColor = null
+
+  if (
+    nombreOrPayload != null
+    && typeof nombreOrPayload === 'object'
+    && !Array.isArray(nombreOrPayload)
+    && 'nombre' in nombreOrPayload
+  ) {
+    nombre = nombreOrPayload.nombre
+    creadoPor = nombreOrPayload.creadoPor ?? ''
+    deporte = nombreOrPayload.deporte
+    frase = typeof nombreOrPayload.frase === 'string' ? nombreOrPayload.frase : ''
+    equipoLocalColor = nombreOrPayload.equipoLocalColor ?? nombreOrPayload.equipoLocal ?? null
+    equipoVisitanteColor = nombreOrPayload.equipoVisitanteColor ?? nombreOrPayload.equipoVisitante ?? null
+  } else {
+    nombre = nombreOrPayload
+    creadoPor = creadoPorArg || ''
+    deporte = deporteArg
+  }
+
+  const nombreStr = (nombre || '').trim() || 'Nueva organización'
+  const slug = nombreStr.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+  const el = normalizeEquipoOrgColor(equipoLocalColor) ?? ORG_EQUIPO_LOCAL_DEFAULT
+  const ev = normalizeEquipoOrgColor(equipoVisitanteColor) ?? ORG_EQUIPO_VISITANTE_DEFAULT
+  const fraseTrim = (frase || '').trim().slice(0, 240)
+
   const ref = await addDoc(collection(db, ORGANIZACIONES), {
-    nombre: (nombre || '').trim() || 'Nueva organización',
+    nombre: nombreStr,
     deporte: normalizeDeporte(deporte),
+    frase: fraseTrim,
+    equipoLocalColor: el,
+    equipoVisitanteColor: ev,
     slug: slug || null,
     creadoPor: creadoPor || '',
     creadoEn: new Date(),

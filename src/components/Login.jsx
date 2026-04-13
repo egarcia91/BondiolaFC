@@ -4,9 +4,12 @@ import { isFirebaseConfigured } from '../firebase'
 import './Login.css'
 
 /**
- * @param {{ onVolverInicio?: () => void }} props
+ * @param {{
+ *   onVolverInicio?: () => void,
+ *   paraCrearOrganizacion?: boolean,
+ * }} props
  */
-function Login({ onVolverInicio }) {
+function Login({ onVolverInicio, paraCrearOrganizacion = false }) {
   const { signInWithGooglePopup, authError, clearAuthError } = useAuth()
   const [error, setError] = useState('')
   const [loadingGoogle, setLoadingGoogle] = useState(false)
@@ -37,7 +40,11 @@ function Login({ onVolverInicio }) {
           </button>
         )}
         <h1 className="login-title">Cable a Tierra</h1>
-        <p className="login-subtitle">¡Logueate para ver tus organizaciones!</p>
+        <p className="login-subtitle">
+          {paraCrearOrganizacion
+            ? 'Creá tu cuenta con Google para poder crear una organización y cargar partidos.'
+            : '¡Logueate para ver tus organizaciones!'}
+        </p>
 
         {isFirebaseConfigured && (
           <button

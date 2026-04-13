@@ -210,6 +210,10 @@
   line-height: 1;
 }
 
+.pantalla-inicio-item-padel {
+  flex-shrink: 0;
+}
+
 .pantalla-inicio-deporte-texto {
   display: block;
   max-width: 100%;

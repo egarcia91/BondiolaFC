@@ -26,6 +26,34 @@ export function deporteEsFutbol(deporte) {
 }
 
 /**
+ * True si el deporte es pádel / paddle (nombre preset u otras variantes).
+ * @param {string | null | undefined} deporte
+ * @returns {boolean}
+ */
+export function deporteEsPadel(deporte) {
+  const k = normalizeDeporteKey(deporte || '')
+  if (!k) return false
+  if (k === 'padel' || k === 'paddle') return true
+  if (k.startsWith('padel')) return true
+  if (k.startsWith('paddle')) return true
+  return false
+}
+
+/**
+ * True si el deporte es básquet (preset “Basquet”, basketball, baloncesto, etc.).
+ * @param {string | null | undefined} deporte
+ * @returns {boolean}
+ */
+export function deporteEsBasquet(deporte) {
+  const k = normalizeDeporteKey(deporte || '')
+  if (!k) return false
+  if (k.includes('baloncesto') || k.includes('basketball')) return true
+  if (k === 'basquet' || k === 'basket') return true
+  if (k.startsWith('basquet') || k.startsWith('basket')) return true
+  return false
+}
+
+/**
  * Texto del deporte para UI cuando no es fútbol (columna angosta; puede truncarse con CSS).
  * @param {string | null | undefined} deporte
  * @returns {string}

@@ -1,26 +1,25 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from './contexts/AuthContext'
 import { useOrg } from './contexts/OrgContext'
-import { getJugadorByEmail, getJugadores, getPartidos } from './services/firestore'
+import { asegurarJugadorAdminCreador, getJugadorByEmail, getJugadores, getPartidos } from './services/firestore'
 import Login from './components/Login'
 import PantallaInicio from './components/PantallaInicio'
-import CrearOrganizacionPublica from './components/CrearOrganizacionPublica'
 import WizardPrimeraOrganizacion from './components/WizardPrimeraOrganizacion'
 import { CREAR_ORG_PERFIL_KEY } from './constants/onboarding'
 import Jugadores from './components/Jugadores'
 import Partidos from './components/Partidos'
 import RegistroJugador from './components/RegistroJugador'
 import ConfigJugador from './components/ConfigJugador'
-import ElegirOrganizacion from './components/ElegirOrganizacion'
+import CrearOrganizacionPantalla from './components/CrearOrganizacionPantalla'
 import UnirseConCodigoModal from './components/UnirseConCodigoModal'
 import InvitarModal from './components/InvitarModal'
 import { OrgProvider } from './contexts/OrgContext'
-import { deporteEsFutbol } from './utils/deporte'
+import { deporteEsFutbol, deporteEsBasquet } from './utils/deporte'
 import './App.css'
 
 const THEME_KEY = 'bondiola-fc-theme'
 
-function PortadaSesionGoogle({ onCerrar }) {
+function PortadaSesionGoogle({ onCerrar, onPedirCrearOrganizacionDirecto }) {
   const { setCurrentOrgId } = useOrg()
   return (
     <PantallaInicio
@@ -31,7 +30,7 @@ function PortadaSesionGoogle({ onCerrar }) {
         onCerrar()
       }}
       onCrearOrganizacion={() => {
-        setCurrentOrgId(null)
+        onPedirCrearOrganizacionDirecto?.()
         onCerrar()
       }}
     />
@@ -41,9 +40,17 @@ function PortadaSesionGoogle({ onCerrar }) {
 function App() {
   const { user, loading, isAuthenticated } = useAuth()
   const [vistaAccesoPublico, setVistaAccesoPublico] = useState('inicio')
+  /** Si el usuario llegó a login desde "Crear nueva organización" en la portada (sin sesión). */
+  const [loginParaCrearOrganizacion, setLoginParaCrearOrganizacion] = useState(false)
   const [wizardPerfil, setWizardPerfil] = useState(null)
   const [portadaDesdeSesion, setPortadaDesdeSesion] = useState(false)
+  /** Tras "Crear nueva organización" en la portada con sesión: abrir el formulario sin pasar por la lista. */
+  const [forzarVistaCrearOrganizacion, setForzarVistaCrearOrganizacion] = useState(false)
   const eraAutenticadoRef = useRef(false)
+
+  const consumirForzarVistaCrearOrganizacion = useCallback(() => {
+    setForzarVistaCrearOrganizacion(false)
+  }, [])
 
   const leerPerfilCrearOrg = useCallback(() => {
     if (typeof sessionStorage === 'undefined') return null
@@ -61,12 +68,14 @@ function App() {
   useEffect(() => {
     if (eraAutenticadoRef.current && !isAuthenticated) {
       setVistaAccesoPublico('inicio')
+      setLoginParaCrearOrganizacion(false)
     }
     eraAutenticadoRef.current = isAuthenticated
   }, [isAuthenticated])
 
   useEffect(() => {
     if (!isAuthenticated) setPortadaDesdeSesion(false)
+    else setLoginParaCrearOrganizacion(false)
   }, [isAuthenticated])
 
   useEffect(() => {
@@ -94,15 +103,26 @@ function App() {
     if (vistaAccesoPublico === 'inicio') {
       return (
         <PantallaInicio
-          onCrearOrganizacion={() => setVistaAccesoPublico('crear-org')}
-          onIrALogin={() => setVistaAccesoPublico('login')}
+          onCrearOrganizacion={() => {
+            setLoginParaCrearOrganizacion(true)
+            setVistaAccesoPublico('login')
+          }}
+          onIrALogin={() => {
+            setLoginParaCrearOrganizacion(false)
+            setVistaAccesoPublico('login')
+          }}
         />
       )
     }
-    if (vistaAccesoPublico === 'crear-org') {
-      return <CrearOrganizacionPublica onVolver={() => setVistaAccesoPublico('inicio')} />
-    }
-    return <Login onVolverInicio={() => setVistaAccesoPublico('inicio')} />
+    return (
+      <Login
+        paraCrearOrganizacion={loginParaCrearOrganizacion}
+        onVolverInicio={() => {
+          setLoginParaCrearOrganizacion(false)
+          setVistaAccesoPublico('inicio')
+        }}
+      />
+    )
   }
 
   if (user?.type === 'google' && wizardPerfil) {
@@ -116,24 +136,53 @@ function App() {
   return (
     <OrgProvider user={user}>
       {portadaDesdeSesion ? (
-        <PortadaSesionGoogle onCerrar={() => setPortadaDesdeSesion(false)} />
+        <PortadaSesionGoogle
+          onCerrar={() => setPortadaDesdeSesion(false)}
+          onPedirCrearOrganizacionDirecto={() => setForzarVistaCrearOrganizacion(true)}
+        />
       ) : (
-        <AppConOrg onAbrirPortada={() => setPortadaDesdeSesion(true)} />
+        <AppConOrg
+          onAbrirPortada={() => setPortadaDesdeSesion(true)}
+          forzarVistaCrearOrganizacion={forzarVistaCrearOrganizacion}
+          onConsumidoForzarVistaCrearOrganizacion={consumirForzarVistaCrearOrganizacion}
+          onPedirCrearOrganizacionDirecto={() => setForzarVistaCrearOrganizacion(true)}
+        />
       )}
     </OrgProvider>
   )
 }
 
 /**
- * @param {{ onAbrirPortada?: () => void }} props
+ * Contenedor con org activa o formulario de creación. `onAbrirPortada` abre la portada con sesión.
+ * @param {{
+ *   onAbrirPortada?: () => void,
+ *   forzarVistaCrearOrganizacion?: boolean,
+ *   onConsumidoForzarVistaCrearOrganizacion?: () => void,
+ *   onPedirCrearOrganizacionDirecto?: () => void,
+ * }} props
  */
-function AppConOrg({ onAbrirPortada }) {
+function AppConOrg({
+  onAbrirPortada,
+  forzarVistaCrearOrganizacion = false,
+  onConsumidoForzarVistaCrearOrganizacion,
+  onPedirCrearOrganizacionDirecto,
+}) {
   const { user, signOut, isAuthenticated } = useAuth()
-  const { organizaciones, currentOrgId, currentOrg, setCurrentOrgId, loading: orgLoading } = useOrg()
+  const {
+    organizaciones,
+    currentOrgId,
+    currentOrg,
+    setCurrentOrgId,
+    loading: orgLoading,
+    refreshOrganizaciones,
+    errorOrgs,
+  } = useOrg()
   const [activeSection, setActiveSection] = useState('jugadores')
   const [showRegistroModal, setShowRegistroModal] = useState(false)
   const [showConfigModal, setShowConfigModal] = useState(false)
   const [showUnirseCodigo, setShowUnirseCodigo] = useState(false)
+  const [errorCrearOrganizacion, setErrorCrearOrganizacion] = useState(null)
+  const abrioPortadaSinOrgsRef = useRef(false)
   const [showInvitar, setShowInvitar] = useState(false)
   const [yaRegistrado, setYaRegistrado] = useState(null)
   const [jugadorActual, setJugadorActual] = useState(null)
@@ -205,6 +254,63 @@ function AppConOrg({ onAbrirPortada }) {
     }
   }, [currentOrgId])
 
+  useEffect(() => {
+    if (user?.type !== 'google') return
+    if (typeof window === 'undefined') return
+    const invite = new URLSearchParams(window.location.search).get('invite')
+    if (invite) setShowUnirseCodigo(true)
+  }, [user?.type])
+
+  useEffect(() => {
+    if (orgLoading || user?.type !== 'google' || !isAuthenticated) return
+    if (forzarVistaCrearOrganizacion) return
+    if (organizaciones.length > 0) {
+      abrioPortadaSinOrgsRef.current = false
+      return
+    }
+    if (abrioPortadaSinOrgsRef.current) return
+    abrioPortadaSinOrgsRef.current = true
+    onAbrirPortada?.()
+  }, [orgLoading, user?.type, isAuthenticated, organizaciones.length, forzarVistaCrearOrganizacion, onAbrirPortada])
+
+  if (forzarVistaCrearOrganizacion && user?.type === 'google') {
+    const inviteCodigo = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('invite') || '' : ''
+    return (
+      <div className="app">
+        {errorCrearOrganizacion && (
+          <p className="app-inline-error" role="alert">{errorCrearOrganizacion}</p>
+        )}
+        <CrearOrganizacionPantalla
+          user={user}
+          onVolver={() => {
+            setErrorCrearOrganizacion(null)
+            onConsumidoForzarVistaCrearOrganizacion?.()
+            onAbrirPortada?.()
+          }}
+          onCreada={async (orgId) => {
+            setErrorCrearOrganizacion(null)
+            try {
+              await asegurarJugadorAdminCreador(orgId, user)
+              await refreshOrganizaciones()
+            } catch (e) {
+              console.error(e)
+              setErrorCrearOrganizacion(e?.message || 'No se pudo completar el alta del administrador.')
+            }
+            setCurrentOrgId(orgId)
+            onConsumidoForzarVistaCrearOrganizacion?.()
+          }}
+        />
+        {showUnirseCodigo && (
+          <UnirseConCodigoModal
+            codigoInicial={inviteCodigo}
+            onClose={() => setShowUnirseCodigo(false)}
+            onUnido={() => setShowUnirseCodigo(false)}
+          />
+        )}
+      </div>
+    )
+  }
+
   if (orgLoading) {
     return (
       <div className="app app-loading">
@@ -214,18 +320,42 @@ function AppConOrg({ onAbrirPortada }) {
   }
 
   if (!currentOrgId) {
-    const inviteCode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('invite')
-    const showUnirse = showUnirseCodigo || (inviteCode && user?.type === 'google')
+    const inviteCodigo = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('invite') || '' : ''
     return (
-      <div className="app">
-        <ElegirOrganizacion
-          user={user}
-          onUnirseConCodigo={user?.type === 'google' ? () => setShowUnirseCodigo(true) : undefined}
-          onElegida={() => {}}
-        />
-        {showUnirse && (
+      <div className="app app-loading app-sin-org-fallback">
+        {errorOrgs && <p className="app-inline-error" role="alert">{errorOrgs}</p>}
+        <p>No hay una organización para mostrar.</p>
+        {user?.type === 'google' && (
+          <>
+            <button
+              type="button"
+              className="app-registro-btn"
+              onClick={() => onPedirCrearOrganizacionDirecto?.()}
+            >
+              Crear nueva organización
+            </button>
+            <button
+              type="button"
+              className="app-registro-btn"
+              onClick={() => setShowUnirseCodigo(true)}
+            >
+              Unirme con código
+            </button>
+            {onAbrirPortada && (
+              <button type="button" className="app-registro-btn" onClick={onAbrirPortada}>
+                Pantalla principal
+              </button>
+            )}
+          </>
+        )}
+        {user?.type === 'guest' && (
+          <button type="button" className="app-registro-btn" onClick={() => signOut()}>
+            Volver al inicio
+          </button>
+        )}
+        {showUnirseCodigo && user?.type === 'google' && (
           <UnirseConCodigoModal
-            codigoInicial={inviteCode || ''}
+            codigoInicial={inviteCodigo}
             onClose={() => setShowUnirseCodigo(false)}
             onUnido={() => setShowUnirseCodigo(false)}
           />
@@ -245,9 +375,18 @@ function AppConOrg({ onAbrirPortada }) {
                   <span className="header-ball" aria-hidden="true">⚽</span>{' '}
                 </>
               )}
+              {deporteEsBasquet(currentOrg?.deporte) && (
+                <>
+                  <span className="header-ball" aria-hidden="true">🏀</span>{' '}
+                </>
+              )}
               {currentOrg?.nombre || 'Bondiola FC'}
             </h1>
-            <p className="subtitle">Estadísticas de {currentOrg?.deporte || 'Futbol'} día a día</p>
+            <p className="subtitle">
+              {currentOrg?.frase?.trim()
+                ? currentOrg.frase.trim()
+                : `Estadísticas de ${currentOrg?.deporte || 'Futbol'} día a día`}
+            </p>
           </div>
           <div className="app-header-actions">
             {user?.type === 'google' && currentOrgId && onAbrirPortada && (
@@ -255,9 +394,19 @@ function AppConOrg({ onAbrirPortada }) {
                 type="button"
                 className="app-registro-btn"
                 onClick={onAbrirPortada}
-                title="Ver el inicio público y el listado de organizaciones"
+                title="Volver al inicio público"
               >
                 Pantalla principal
+              </button>
+            )}
+            {user?.type === 'google' && currentOrgId && (
+              <button
+                type="button"
+                className="app-registro-btn"
+                onClick={() => setShowUnirseCodigo(true)}
+                title="Ingresar un código de invitación"
+              >
+                Unirme con código
               </button>
             )}
             {organizaciones.length > 1 && (
@@ -397,6 +546,13 @@ function AppConOrg({ onAbrirPortada }) {
           organizacionId={currentOrgId}
           creadoPor={user?.uid ?? ''}
           onClose={() => setShowInvitar(false)}
+        />
+      )}
+      {showUnirseCodigo && user?.type === 'google' && (
+        <UnirseConCodigoModal
+          codigoInicial={typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('invite') || '' : ''}
+          onClose={() => setShowUnirseCodigo(false)}
+          onUnido={() => setShowUnirseCodigo(false)}
         />
       )}
     </div>

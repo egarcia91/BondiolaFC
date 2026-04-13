@@ -3,7 +3,8 @@ import { getResumenPublicoOrganizaciones } from '../services/firestore'
 import { isFirebaseConfigured } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import { ORG_STORAGE_KEY } from '../contexts/OrgContext'
-import { deporteEsFutbol, deporteTextoLista, deporteAbreviatura } from '../utils/deporte'
+import { deporteEsFutbol, deporteEsPadel, deporteEsBasquet, deporteTextoLista, deporteAbreviatura } from '../utils/deporte'
+import IconoPaletaPadel from './IconoPaletaPadel'
 import './PantallaInicio.css'
 
 /**
@@ -135,12 +136,15 @@ export default function PantallaInicio({
                   const nombreOrg = org.nombre || org.id
                   const deporteOrg = org.deporte || 'Futbol'
                   const esFutbol = deporteEsFutbol(deporteOrg)
+                  const esPadel = deporteEsPadel(deporteOrg)
+                  const esBasquet = deporteEsBasquet(deporteOrg)
                   const golesOrg = typeof golesTotales === 'number' ? golesTotales : 0
+                  const ariaCortaDeporte = esFutbol || esPadel || esBasquet
                   const ariaLabelBtn = modoConSesion
-                    ? (esFutbol
+                    ? (ariaCortaDeporte
                       ? `Abrir organización ${nombreOrg}`
                       : `Abrir organización ${nombreOrg}, ${deporteTextoLista(deporteOrg)}`)
-                    : (esFutbol
+                    : (ariaCortaDeporte
                       ? `Entrar como invitado en ${nombreOrg}`
                       : `Entrar como invitado en ${nombreOrg}, ${deporteTextoLista(deporteOrg)}`)
                   return (
@@ -153,10 +157,14 @@ export default function PantallaInicio({
                       >
                         <span
                           className="pantalla-inicio-col-deporte"
-                          title={esFutbol ? 'Fútbol' : deporteTextoLista(deporteOrg)}
+                          title={esFutbol ? 'Fútbol' : esPadel ? 'Pádel' : esBasquet ? 'Básquet' : deporteTextoLista(deporteOrg)}
                         >
                           {esFutbol ? (
                             <span className="pantalla-inicio-item-ball" role="img" aria-label="Fútbol">⚽</span>
+                          ) : esPadel ? (
+                            <IconoPaletaPadel className="pantalla-inicio-item-padel" />
+                          ) : esBasquet ? (
+                            <span className="pantalla-inicio-item-ball" role="img" aria-label="Básquet">🏀</span>
                           ) : (
                             <span className="pantalla-inicio-deporte-texto">{deporteAbreviatura(deporteOrg)}</span>
                           )}
@@ -189,7 +197,16 @@ export default function PantallaInicio({
         </section>
 
         <div className="pantalla-inicio-actions">
-          <button type="button" className="pantalla-inicio-btn-ingresar" onClick={onCrearOrganizacion}>
+          <button
+            type="button"
+            className="pantalla-inicio-btn-ingresar"
+            onClick={onCrearOrganizacion}
+            title={
+              modoConSesion
+                ? 'Crear una organización nueva con tu cuenta'
+                : 'Iniciá sesión con Google para crear una organización'
+            }
+          >
             Crear nueva organización
           </button>
           {!modoConSesion && onIrALogin && (
