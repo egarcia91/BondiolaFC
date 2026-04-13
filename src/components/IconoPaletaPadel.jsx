@@ -2,11 +2,11 @@ import './IconoPaletaPadel.css'
 
 /**
  * Ícono de paleta de pádel (cara perforada + mango) para listados.
- * @param {{ className?: string }} props
+ * @param {{ className?: string, title?: string }} props
  */
-export default function IconoPaletaPadel({ className = '' }) {
+export default function IconoPaletaPadel({ className = '', title }) {
   return (
-    <span className={`icono-padel-paleta ${className}`.trim()} aria-hidden="true">
+    <span className={`icono-padel-paleta ${className}`.trim()} aria-hidden="true" title={title}>
       <svg
         className="icono-padel-paleta-svg"
         viewBox="0 0 24 24"

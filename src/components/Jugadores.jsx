@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { getJugadores, getPartidos, normalizePartidos } from '../services/firestore'
 import NuevoJugadorModal from './NuevoJugadorModal'
+import AdminEditarJugadorModal from './AdminEditarJugadorModal'
 import JugadorEloChart from './JugadorEloChart'
 import JugadorEloComparacionChart from './JugadorEloComparacionChart'
 import { serieEloParaGrafico } from '../utils/eloSerie'
@@ -81,6 +82,8 @@ function accentClassForMetric(clave) {
       return 'stat-item--accent-empates'
     case 'derrotas_partido':
       return 'stat-item--accent-derrotas'
+    case 'mvp':
+      return 'stat-item--accent-mvp'
     default:
       return ''
   }
@@ -189,6 +192,30 @@ function IconoEloGrafico() {
   )
 }
 
+const TITLE_EDITAR_JUGADOR_ADMIN = 'Editar nombre, apodo y fecha de nacimiento'
+
+function IconoLapizEditar() {
+  return (
+    <svg
+      className="jugador-editar-admin-icon"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <path
+        d="M17 3a2.85 2.85 0 114 4L8.5 19.5 3 21l1.5-5.5L17 3z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 function Jugadores({ organizacionId, isAdmin }) {
   const [jugadores, setJugadores] = useState([])
   const [partidos, setPartidos] = useState([])
@@ -205,6 +232,7 @@ function Jugadores({ organizacionId, isAdmin }) {
   /** Solo un gráfico de Elo abierto a la vez (acordeón). */
   const [eloGraficoJugadorId, setEloGraficoJugadorId] = useState(null)
   const [showNuevoJugadorModal, setShowNuevoJugadorModal] = useState(false)
+  const [jugadorEditandoAdmin, setJugadorEditandoAdmin] = useState(null)
 
   const toggleEloGrafico = (jugadorId) => {
     setEloGraficoJugadorId((actual) => (actual === jugadorId ? null : jugadorId))
@@ -349,6 +377,13 @@ function Jugadores({ organizacionId, isAdmin }) {
       lista.sort(
         (a, b) => ratioPorPartido(b, 'derrotas_partido') - ratioPorPartido(a, 'derrotas_partido')
       )
+    } else if (ordenPor === 'mvp') {
+      lista.sort((a, b) => {
+        const ma = Number(a.mvp) || 0
+        const mb = Number(b.mvp) || 0
+        if (mb !== ma) return mb - ma
+        return (b.partidos ?? 0) - (a.partidos ?? 0)
+      })
     }
     return lista
   }, [jugadores, partidosNormalized, filtroPosicion, ordenPor, presenciasUltimosMap, ultimosPartidosVentana])
@@ -362,6 +397,7 @@ function Jugadores({ organizacionId, isAdmin }) {
     if (ordenPor === 'partidos') return 'partidos'
     if (ordenPor === 'goles') return 'goles'
     if (ordenPor === 'ranking') return 'elo'
+    if (ordenPor === 'mvp') return 'mvp'
     if (ORDEN_PROMEDIO_KEYS.has(ordenPor)) return ordenPor
     return null
   }, [ordenPor, ultimosPartidosVentana])
@@ -440,6 +476,15 @@ function Jugadores({ organizacionId, isAdmin }) {
         />
       )}
 
+      {isAdmin && jugadorEditandoAdmin && (
+        <AdminEditarJugadorModal
+          key={jugadorEditandoAdmin.id}
+          jugador={jugadorEditandoAdmin}
+          onClose={() => setJugadorEditandoAdmin(null)}
+          onSaved={refreshJugadores}
+        />
+      )}
+
       {jugadores.length > 0 && (
         <div
           className={`jugadores-controles ${modoVista === 'comparar' ? 'jugadores-controles--comparar' : ''}`}
@@ -507,6 +552,7 @@ function Jugadores({ organizacionId, isAdmin }) {
                 <option value="partidos">Más partidos</option>
                 <option value="goles">Más goles</option>
                 <option value="ranking">Ranking</option>
+                <option value="mvp">MVP</option>
                 <option value="goles_partido">Goles por partido</option>
                 <option value="victorias_partido">Victorias por partido</option>
                 <option value="empates_partido">Empates por partido</option>
@@ -583,7 +629,20 @@ function Jugadores({ organizacionId, isAdmin }) {
                               <span className="jugador-nombre">{jugadorCompararA.nombre}</span>
                             )}
                           </div>
-                          <span className="jugador-posicion">{jugadorCompararA.posicion}</span>
+                          <div className="jugadores-comparar-mini-footer">
+                            {isAdmin && (
+                              <button
+                                type="button"
+                                className="jugador-btn-editar-admin"
+                                onClick={() => setJugadorEditandoAdmin(jugadorCompararA)}
+                                aria-label={TITLE_EDITAR_JUGADOR_ADMIN}
+                                title={TITLE_EDITAR_JUGADOR_ADMIN}
+                              >
+                                <IconoLapizEditar />
+                              </button>
+                            )}
+                            <span className="jugador-posicion">{jugadorCompararA.posicion}</span>
+                          </div>
                         </>
                       ) : (
                         <p className="jugadores-comparar-placeholder">Elegí jugador (izq.)</p>
@@ -601,7 +660,20 @@ function Jugadores({ organizacionId, isAdmin }) {
                               <span className="jugador-nombre">{jugadorCompararB.nombre}</span>
                             )}
                           </div>
-                          <span className="jugador-posicion">{jugadorCompararB.posicion}</span>
+                          <div className="jugadores-comparar-mini-footer">
+                            {isAdmin && (
+                              <button
+                                type="button"
+                                className="jugador-btn-editar-admin"
+                                onClick={() => setJugadorEditandoAdmin(jugadorCompararB)}
+                                aria-label={TITLE_EDITAR_JUGADOR_ADMIN}
+                                title={TITLE_EDITAR_JUGADOR_ADMIN}
+                              >
+                                <IconoLapizEditar />
+                              </button>
+                            )}
+                            <span className="jugador-posicion">{jugadorCompararB.posicion}</span>
+                          </div>
                         </>
                       ) : (
                         <p className="jugadores-comparar-placeholder">Elegí jugador (der.)</p>
@@ -724,7 +796,20 @@ function Jugadores({ organizacionId, isAdmin }) {
                     <h3 className="jugador-apodo">{jugador.apodo || jugador.nombre}</h3>
                     {jugador.apodo && <span className="jugador-nombre">{jugador.nombre}</span>}
                   </div>
-                  <span className="jugador-posicion">{jugador.posicion}</span>
+                  <div className="jugador-header-derecha">
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        className="jugador-btn-editar-admin"
+                        onClick={() => setJugadorEditandoAdmin(jugador)}
+                        aria-label={TITLE_EDITAR_JUGADOR_ADMIN}
+                        title={TITLE_EDITAR_JUGADOR_ADMIN}
+                      >
+                        <IconoLapizEditar />
+                      </button>
+                    )}
+                    <span className="jugador-posicion">{jugador.posicion}</span>
+                  </div>
                 </div>
                 <div className="jugador-stats">
                   {ordenPor === 'presentes' && ultimosPartidosVentana > 0 && (
@@ -838,17 +923,27 @@ function Jugadores({ organizacionId, isAdmin }) {
                         className={
                           ordenPor === 'goles'
                             ? 'jugador-list-partidos jugador-list-metric--goles'
-                            : ordenPor === 'presentes' && ultimosPartidosVentana > 0
-                              ? 'jugador-list-partidos jugador-list-metric--presencias'
-                              : ORDEN_PROMEDIO_KEYS.has(ordenPor)
-                                ? 'jugador-list-partidos jugador-list-metric--promedio'
-                                : 'jugador-list-partidos'
+                            : ordenPor === 'mvp'
+                              ? 'jugador-list-partidos jugador-list-metric--mvp'
+                              : ordenPor === 'presentes' && ultimosPartidosVentana > 0
+                                ? 'jugador-list-partidos jugador-list-metric--presencias'
+                                : ORDEN_PROMEDIO_KEYS.has(ordenPor)
+                                  ? 'jugador-list-partidos jugador-list-metric--promedio'
+                                  : 'jugador-list-partidos'
                         }
                       >
                         {ordenPor === 'goles' ? (
                           <>
                             <span className="jugador-list-goles-num">{jugador.goles ?? 0}</span>
                             <span className="jugador-list-goles-lbl"> {jugador.goles === 1 ? 'gol' : 'goles'}</span>
+                          </>
+                        ) : ordenPor === 'mvp' ? (
+                          <>
+                            <span className="jugador-list-mvp-num">{jugador.mvp ?? 0}</span>
+                            <span className="jugador-list-mvp-lbl">
+                              {' '}
+                              {Number(jugador.mvp) === 1 ? 'MVP' : 'MVPs'}
+                            </span>
                           </>
                         ) : ordenPor === 'presentes' && ultimosPartidosVentana > 0 ? (
                           <>
@@ -900,6 +995,20 @@ function Jugadores({ organizacionId, isAdmin }) {
                 )}
                 {expandidoId === jugador.id && (
                   <div className="jugador-list-item-detail">
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        className="jugador-btn-editar-admin jugador-btn-editar-admin--lista-movil"
+                        onClick={(ev) => {
+                          ev.stopPropagation()
+                          setJugadorEditandoAdmin(jugador)
+                        }}
+                        aria-label={TITLE_EDITAR_JUGADOR_ADMIN}
+                        title={TITLE_EDITAR_JUGADOR_ADMIN}
+                      >
+                        <IconoLapizEditar />
+                      </button>
+                    )}
                     {jugador.apodo && <p className="jugador-list-nombre">{jugador.nombre}</p>}
                     <span className="jugador-posicion">{jugador.posicion}</span>
                     <div className="jugador-list-stats">

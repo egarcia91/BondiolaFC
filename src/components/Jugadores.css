@@ -183,8 +183,16 @@
   font-size: 0.85rem;
 }
 
-.jugadores-comparar-mini-card .jugador-posicion {
-  align-self: flex-start;
+.jugadores-comparar-mini-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.jugadores-comparar-mini-footer .jugador-posicion {
+  align-self: center;
 }
 
 .jugadores-comparar-placeholder {
@@ -359,6 +367,43 @@
   color: var(--text-secondary);
 }
 
+.jugador-header-derecha {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.jugador-btn-editar-admin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  padding: 0;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.jugador-btn-editar-admin:hover {
+  color: var(--text-primary);
+  border-color: var(--primary-color);
+  background: var(--bg-color);
+}
+
+.jugador-editar-admin-icon {
+  display: block;
+}
+
+.jugador-btn-editar-admin--lista-movil {
+  margin-bottom: 0.75rem;
+}
+
 .jugador-posicion {
   background-color: var(--primary-color);
   color: white;
@@ -519,6 +564,15 @@
 
 .stat-item--accent-elo .stat-value {
   color: var(--primary-color);
+}
+
+.stat-item--accent-mvp {
+  border-left-color: #a855f7;
+  background: color-mix(in srgb, #a855f7 14%, transparent);
+}
+
+.stat-item--accent-mvp .stat-value {
+  color: #9333ea;
 }
 
 .stat-item--accent-victorias {
@@ -798,6 +852,24 @@
   }
 
   .jugador-list-goles-lbl {
+    font-weight: 500;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .jugador-list-metric--mvp {
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .jugador-list-mvp-num {
+    font-weight: 800;
+    font-size: 1.05rem;
+    color: var(--primary-color);
+  }
+
+  .jugador-list-mvp-lbl {
     font-weight: 500;
     font-size: 0.8rem;
     color: var(--text-secondary);

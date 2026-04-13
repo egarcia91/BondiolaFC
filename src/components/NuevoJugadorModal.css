@@ -170,3 +170,10 @@
 .nuevo-jugador-btn-primary:hover:not(:disabled) {
   opacity: 0.9;
 }
+
+.admin-editar-jugador-hint {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}

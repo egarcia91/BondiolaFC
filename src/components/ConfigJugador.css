@@ -21,6 +21,24 @@
   border: 1px solid var(--border-color);
 }
 
+.config-org-block {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.config-org-block-title {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
 .config-header {
   display: flex;
   justify-content: space-between;
@@ -220,4 +238,69 @@
   font-size: 0.88rem;
   color: var(--text-secondary);
   line-height: 1.4;
+}
+
+.config-zona-peligro {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.config-zona-peligro-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--danger-color, #c62828);
+}
+
+.config-zona-peligro-desc {
+  margin: 0 0 0.85rem;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.config-eliminar-org-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.config-eliminar-org-aviso {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  line-height: 1.45;
+}
+
+.config-eliminar-org-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.config-btn-peligro-outline {
+  background: transparent;
+  color: var(--danger-color, #c62828);
+  border: 1px solid var(--danger-color, #c62828);
+}
+
+.config-btn-peligro-outline:hover:not(:disabled) {
+  background: rgba(198, 40, 40, 0.08);
+}
+
+.config-btn-peligro {
+  background: var(--danger-color, #c62828);
+  color: #fff;
+}
+
+.config-btn-peligro:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.config-btn-peligro:disabled {
+  opacity: 0.55;
 }

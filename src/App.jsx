@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from './contexts/AuthContext'
 import { useOrg } from './contexts/OrgContext'
-import { asegurarJugadorAdminCreador, getJugadorByEmail, getJugadores, getPartidos } from './services/firestore'
+import { asegurarJugadorAdminCreador, eliminarOrganizacionSiCreador, getJugadorByEmail, getJugadores, getPartidos } from './services/firestore'
 import Login from './components/Login'
 import PantallaInicio from './components/PantallaInicio'
 import WizardPrimeraOrganizacion from './components/WizardPrimeraOrganizacion'
@@ -13,8 +13,9 @@ import ConfigJugador from './components/ConfigJugador'
 import CrearOrganizacionPantalla from './components/CrearOrganizacionPantalla'
 import UnirseConCodigoModal from './components/UnirseConCodigoModal'
 import InvitarModal from './components/InvitarModal'
+import IconoPaletaPadel from './components/IconoPaletaPadel'
 import { OrgProvider } from './contexts/OrgContext'
-import { deporteEsFutbol, deporteEsBasquet } from './utils/deporte'
+import { deporteEsFutbol, deporteEsBasquet, deporteEsTenis, deporteEsPadel } from './utils/deporte'
 import './App.css'
 
 const THEME_KEY = 'bondiola-fc-theme'
@@ -364,6 +365,12 @@ function AppConOrg({
     )
   }
 
+  const esCreadorOrganizacionActual =
+    user?.type === 'google'
+    && !!user?.uid
+    && !!currentOrg?.creadoPor
+    && String(currentOrg.creadoPor).trim() === String(user.uid).trim()
+
   return (
     <div className="app">
       <header className="app-header">
@@ -372,12 +379,24 @@ function AppConOrg({
             <h1>
               {deporteEsFutbol(currentOrg?.deporte) && (
                 <>
-                  <span className="header-ball" aria-hidden="true">⚽</span>{' '}
+                  <span className="header-ball" aria-hidden="true" title="Fútbol">⚽</span>{' '}
+                </>
+              )}
+              {deporteEsPadel(currentOrg?.deporte) && (
+                <>
+                  <span className="header-ball header-ball--padel" title="Pádel">
+                    <IconoPaletaPadel />
+                  </span>{' '}
                 </>
               )}
               {deporteEsBasquet(currentOrg?.deporte) && (
                 <>
-                  <span className="header-ball" aria-hidden="true">🏀</span>{' '}
+                  <span className="header-ball" aria-hidden="true" title="Básquet">🏀</span>{' '}
+                </>
+              )}
+              {deporteEsTenis(currentOrg?.deporte) && (
+                <>
+                  <span className="header-ball" aria-hidden="true" title="Tenis">🎾</span>{' '}
                 </>
               )}
               {currentOrg?.nombre || 'Bondiola FC'}
@@ -398,29 +417,6 @@ function AppConOrg({
               >
                 Pantalla principal
               </button>
-            )}
-            {user?.type === 'google' && currentOrgId && (
-              <button
-                type="button"
-                className="app-registro-btn"
-                onClick={() => setShowUnirseCodigo(true)}
-                title="Ingresar un código de invitación"
-              >
-                Unirme con código
-              </button>
-            )}
-            {organizaciones.length > 1 && (
-              <select
-                className="app-org-select"
-                value={currentOrgId}
-                onChange={(e) => setCurrentOrgId(e.target.value || null)}
-                title="Cambiar de organización"
-                aria-label="Organización"
-              >
-                {organizaciones.map((org) => (
-                  <option key={org.id} value={org.id}>{org.nombre || org.id}</option>
-                ))}
-              </select>
             )}
             {user?.type === 'google' && (
               <>
@@ -515,6 +511,14 @@ function AppConOrg({
         <ConfigJugador
           userEmail={user.email}
           organizacionId={currentOrgId}
+          organizaciones={organizaciones}
+          currentOrgId={currentOrgId}
+          onCambiarOrganizacion={setCurrentOrgId}
+          onAbrirUnirseCodigo={() => {
+            setEquipoPreview(null)
+            setShowConfigModal(false)
+            setShowUnirseCodigo(true)
+          }}
           onClose={() => {
             setEquipoPreview(null)
             setShowConfigModal(false)
@@ -536,6 +540,16 @@ function AppConOrg({
                   setEquipoPreview(null)
                   setShowConfigModal(false)
                   setShowInvitar(true)
+                }
+              : undefined
+          }
+          puedeEliminarOrganizacion={esCreadorOrganizacionActual}
+          nombreOrganizacion={currentOrg?.nombre || ''}
+          onEliminarOrganizacion={
+            esCreadorOrganizacionActual && currentOrgId
+              ? async () => {
+                  await eliminarOrganizacionSiCreador(currentOrgId, user.uid)
+                  await refreshOrganizaciones()
                 }
               : undefined
           }

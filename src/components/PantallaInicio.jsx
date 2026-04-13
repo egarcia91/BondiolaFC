@@ -3,7 +3,7 @@ import { getResumenPublicoOrganizaciones } from '../services/firestore'
 import { isFirebaseConfigured } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import { ORG_STORAGE_KEY } from '../contexts/OrgContext'
-import { deporteEsFutbol, deporteEsPadel, deporteEsBasquet, deporteTextoLista, deporteAbreviatura } from '../utils/deporte'
+import { deporteEsFutbol, deporteEsPadel, deporteEsBasquet, deporteEsTenis, deporteTextoLista, deporteAbreviatura } from '../utils/deporte'
 import IconoPaletaPadel from './IconoPaletaPadel'
 import './PantallaInicio.css'
 
@@ -138,8 +138,9 @@ export default function PantallaInicio({
                   const esFutbol = deporteEsFutbol(deporteOrg)
                   const esPadel = deporteEsPadel(deporteOrg)
                   const esBasquet = deporteEsBasquet(deporteOrg)
+                  const esTenis = deporteEsTenis(deporteOrg)
                   const golesOrg = typeof golesTotales === 'number' ? golesTotales : 0
-                  const ariaCortaDeporte = esFutbol || esPadel || esBasquet
+                  const ariaCortaDeporte = esFutbol || esPadel || esBasquet || esTenis
                   const ariaLabelBtn = modoConSesion
                     ? (ariaCortaDeporte
                       ? `Abrir organización ${nombreOrg}`
@@ -155,18 +156,19 @@ export default function PantallaInicio({
                         onClick={() => handleClickOrganizacion(org.id)}
                         aria-label={ariaLabelBtn}
                       >
-                        <span
-                          className="pantalla-inicio-col-deporte"
-                          title={esFutbol ? 'Fútbol' : esPadel ? 'Pádel' : esBasquet ? 'Básquet' : deporteTextoLista(deporteOrg)}
-                        >
+                        <span className="pantalla-inicio-col-deporte">
                           {esFutbol ? (
-                            <span className="pantalla-inicio-item-ball" role="img" aria-label="Fútbol">⚽</span>
+                            <span className="pantalla-inicio-item-ball" role="img" aria-label="Fútbol" title="Fútbol">⚽</span>
                           ) : esPadel ? (
-                            <IconoPaletaPadel className="pantalla-inicio-item-padel" />
+                            <IconoPaletaPadel className="pantalla-inicio-item-padel" title="Pádel" />
                           ) : esBasquet ? (
-                            <span className="pantalla-inicio-item-ball" role="img" aria-label="Básquet">🏀</span>
+                            <span className="pantalla-inicio-item-ball" role="img" aria-label="Básquet" title="Básquet">🏀</span>
+                          ) : esTenis ? (
+                            <span className="pantalla-inicio-item-ball" role="img" aria-label="Tenis" title="Tenis">🎾</span>
                           ) : (
-                            <span className="pantalla-inicio-deporte-texto">{deporteAbreviatura(deporteOrg)}</span>
+                            <span className="pantalla-inicio-deporte-texto" title={deporteTextoLista(deporteOrg)}>
+                              {deporteAbreviatura(deporteOrg)}
+                            </span>
                           )}
                         </span>
                         <span className="pantalla-inicio-col-nombre" title={nombreOrg}>

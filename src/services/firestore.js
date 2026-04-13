@@ -1,4 +1,4 @@
-import { collection, getDocs, getDoc, addDoc, doc, updateDoc, deleteDoc, query, where, limit, increment } from 'firebase/firestore'
+import { collection, getDocs, getDoc, addDoc, doc, updateDoc, deleteDoc, query, where, limit, increment, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
 
 const JUGADORES = 'jugadores'
@@ -905,14 +905,14 @@ export function computeEloUpdatesForPartido(partido, ganador, jugadores) {
 }
 
 /**
- * Actualiza el perfil editable de un jugador (apodo, descripcion, posicion, fechaNacimiento, equipoFavorito).
+ * Actualiza el perfil editable de un jugador (nombre, apodo, descripcion, posicion, fechaNacimiento, equipoFavorito).
  * @param {string} jugadorId - ID del documento
  * @param {Object} data - Campos a actualizar
  */
 export async function updateJugadorPerfil(jugadorId, data) {
   if (!db) throw new Error('Firestore no está configurado')
   const ref = doc(db, JUGADORES, jugadorId)
-  const allowed = ['apodo', 'descripcion', 'posicion', 'fechaNacimiento', 'equipoFavorito']
+  const allowed = ['nombre', 'apodo', 'descripcion', 'posicion', 'fechaNacimiento', 'equipoFavorito']
   const toUpdate = {}
   allowed.forEach((key) => {
     if (Object.prototype.hasOwnProperty.call(data, key)) {
@@ -983,6 +983,46 @@ export async function getOrganizacion(organizacionId) {
   const snap = await getDoc(doc(db, ORGANIZACIONES, organizacionId))
   if (!snap.exists()) return null
   return normalizeOrganizacion({ id: snap.id, ...snap.data() })
+}
+
+const FIRESTORE_BATCH_MAX = 500
+
+/**
+ * Elimina la organización y documentos vinculados (jugadores, partidos, invitaciones).
+ * Solo procede si `uidSolicitante` coincide con el campo `creadoPor` de la organización.
+ * @param {string} organizacionId
+ * @param {string} uidSolicitante - uid del usuario de Firebase Auth
+ */
+export async function eliminarOrganizacionSiCreador(organizacionId, uidSolicitante) {
+  if (!db || !organizacionId || !uidSolicitante) {
+    throw new Error('No se puede eliminar: faltan datos.')
+  }
+  const orgRef = doc(db, ORGANIZACIONES, organizacionId)
+  const orgSnap = await getDoc(orgRef)
+  if (!orgSnap.exists()) throw new Error('La organización no existe o ya fue eliminada.')
+  const creadoPor = String(orgSnap.data().creadoPor ?? '').trim()
+  if (!creadoPor || creadoPor !== uidSolicitante) {
+    throw new Error('Solo quien creó la organización puede eliminarla.')
+  }
+
+  const [jugSnap, partSnap, invSnap] = await Promise.all([
+    getDocs(query(collection(db, JUGADORES), where('organizacionId', '==', organizacionId))),
+    getDocs(query(collection(db, PARTIDOS), where('organizacionId', '==', organizacionId))),
+    getDocs(query(collection(db, INVITACIONES), where('organizacionId', '==', organizacionId))),
+  ])
+
+  const refsAEliminar = []
+  for (const d of jugSnap.docs) refsAEliminar.push(doc(db, JUGADORES, d.id))
+  for (const d of partSnap.docs) refsAEliminar.push(doc(db, PARTIDOS, d.id))
+  for (const d of invSnap.docs) refsAEliminar.push(doc(db, INVITACIONES, d.id))
+  refsAEliminar.push(orgRef)
+
+  for (let i = 0; i < refsAEliminar.length; i += FIRESTORE_BATCH_MAX) {
+    const batch = writeBatch(db)
+    const chunk = refsAEliminar.slice(i, i + FIRESTORE_BATCH_MAX)
+    for (const ref of chunk) batch.delete(ref)
+    await batch.commit()
+  }
 }
 
 function generarCodigoInvitacion() {

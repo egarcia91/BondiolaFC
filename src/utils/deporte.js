@@ -54,6 +54,20 @@ export function deporteEsBasquet(deporte) {
 }
 
 /**
+ * True si el deporte es tenis (preset "Tenis", tennis, etc.).
+ * @param {string | null | undefined} deporte
+ * @returns {boolean}
+ */
+export function deporteEsTenis(deporte) {
+  const k = normalizeDeporteKey(deporte || '')
+  if (!k) return false
+  if (k === 'tenis' || k === 'tennis') return true
+  if (k.startsWith('tenis')) return true
+  if (k.startsWith('tennis')) return true
+  return false
+}
+
+/**
  * Texto del deporte para UI cuando no es fútbol (columna angosta; puede truncarse con CSS).
  * @param {string | null | undefined} deporte
  * @returns {string}
