@@ -299,6 +299,29 @@
   transform: scale(0.99);
 }
 
+@media (max-width: 640px) {
+  .pantalla-inicio-org-table {
+    --org-col-gol: 0;
+  }
+
+  .pantalla-inicio-grid {
+    grid-template-columns: var(--org-col-dep) minmax(0, 1fr) var(--org-col-jug) var(--org-col-part);
+  }
+
+  .pantalla-inicio-th--goles,
+  .pantalla-inicio-col-goles {
+    display: none !important;
+  }
+
+  .pantalla-inicio-col-nombre {
+    white-space: normal;
+    word-break: break-word;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.25;
+  }
+}
+
 @media (max-width: 400px) {
   .pantalla-inicio {
     padding: 1.25rem 1rem 2rem;

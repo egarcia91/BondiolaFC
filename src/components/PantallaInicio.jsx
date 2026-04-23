@@ -129,7 +129,7 @@ export default function PantallaInicio({
                 <span className="pantalla-inicio-th pantalla-inicio-th--nombre">Organización</span>
                 <span className="pantalla-inicio-th pantalla-inicio-th--num">Jugadores</span>
                 <span className="pantalla-inicio-th pantalla-inicio-th--num">Partidos</span>
-                <span className="pantalla-inicio-th pantalla-inicio-th--num">Goles</span>
+                <span className="pantalla-inicio-th pantalla-inicio-th--num pantalla-inicio-th--goles">Goles</span>
               </div>
               <ul className="pantalla-inicio-list">
                 {filas.map(({ org, jugadoresActivos, partidosJugados, golesTotales }) => {
@@ -184,7 +184,7 @@ export default function PantallaInicio({
                           {partidosJugados}
                         </span>
                         <span
-                          className="pantalla-inicio-col-num"
+                          className="pantalla-inicio-col-num pantalla-inicio-col-goles"
                           title="Suma de goles de ambos equipos en todos los partidos de la organización"
                         >
                           {golesOrg}

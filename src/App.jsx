@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useAuth } from './contexts/AuthContext'
 import { useOrg } from './contexts/OrgContext'
-import { asegurarJugadorAdminCreador, eliminarOrganizacionSiCreador, getJugadorByEmail, getJugadores, getPartidos } from './services/firestore'
+import { asegurarJugadorAdminCreador, eliminarOrganizacionSiCreador, getJugadorByEmail, getJugadores, getOrganizacion, getPartidos } from './services/firestore'
 import Login from './components/Login'
 import PantallaInicio from './components/PantallaInicio'
 import WizardPrimeraOrganizacion from './components/WizardPrimeraOrganizacion'
@@ -190,6 +190,8 @@ function AppConOrg({
   const [equipoPreview, setEquipoPreview] = useState(null)
   /** Contadores de la org: jugadores con ≥1 partido, partidos concluidos. */
   const [orgStats, setOrgStats] = useState({ jugadoresActivos: null, partidosJugados: null })
+  /** Si la lista del contexto aún no trae nombre, se completa con una lectura directa del doc. */
+  const [headerOrgSnap, setHeaderOrgSnap] = useState(null)
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem(THEME_KEY)
     if (saved) return saved === 'dark'
@@ -254,6 +256,35 @@ function AppConOrg({
       cancelled = true
     }
   }, [currentOrgId])
+
+  useEffect(() => {
+    if (!currentOrgId) {
+      setHeaderOrgSnap(null)
+      return
+    }
+    if ((currentOrg?.nombre || '').trim()) {
+      setHeaderOrgSnap(null)
+      return
+    }
+    let cancelled = false
+    getOrganizacion(currentOrgId)
+      .then((org) => {
+        if (!cancelled) setHeaderOrgSnap(org)
+      })
+      .catch(() => {
+        if (!cancelled) setHeaderOrgSnap(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [currentOrgId, currentOrg?.id, currentOrg?.nombre])
+
+  const nombreTituloHeader = useMemo(
+    () => (currentOrg?.nombre || headerOrgSnap?.nombre || '').trim(),
+    [currentOrg?.nombre, headerOrgSnap?.nombre]
+  )
+  const deporteHeader = currentOrg?.deporte ?? headerOrgSnap?.deporte
+  const fraseHeader = (currentOrg?.frase ?? headerOrgSnap?.frase ?? '').trim()
 
   useEffect(() => {
     if (user?.type !== 'google') return
@@ -377,34 +408,34 @@ function AppConOrg({
         <div className="app-header-content">
           <div className="app-header-title">
             <h1>
-              {deporteEsFutbol(currentOrg?.deporte) && (
+              {deporteEsFutbol(deporteHeader) && (
                 <>
                   <span className="header-ball" aria-hidden="true" title="Fútbol">⚽</span>{' '}
                 </>
               )}
-              {deporteEsPadel(currentOrg?.deporte) && (
+              {deporteEsPadel(deporteHeader) && (
                 <>
                   <span className="header-ball header-ball--padel" title="Pádel">
                     <IconoPaletaPadel />
                   </span>{' '}
                 </>
               )}
-              {deporteEsBasquet(currentOrg?.deporte) && (
+              {deporteEsBasquet(deporteHeader) && (
                 <>
                   <span className="header-ball" aria-hidden="true" title="Básquet">🏀</span>{' '}
                 </>
               )}
-              {deporteEsTenis(currentOrg?.deporte) && (
+              {deporteEsTenis(deporteHeader) && (
                 <>
                   <span className="header-ball" aria-hidden="true" title="Tenis">🎾</span>{' '}
                 </>
               )}
-              {currentOrg?.nombre || 'Bondiola FC'}
+              {nombreTituloHeader || 'Organización'}
             </h1>
             <p className="subtitle">
-              {currentOrg?.frase?.trim()
-                ? currentOrg.frase.trim()
-                : `Estadísticas de ${currentOrg?.deporte || 'Futbol'} día a día`}
+              {fraseHeader
+                ? fraseHeader
+                : `Estadísticas de ${deporteHeader || 'Futbol'} día a día`}
             </p>
           </div>
           <div className="app-header-actions">
@@ -544,7 +575,7 @@ function AppConOrg({
               : undefined
           }
           puedeEliminarOrganizacion={esCreadorOrganizacionActual}
-          nombreOrganizacion={currentOrg?.nombre || ''}
+          nombreOrganizacion={nombreTituloHeader}
           onEliminarOrganizacion={
             esCreadorOrganizacionActual && currentOrgId
               ? async () => {
