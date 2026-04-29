@@ -492,7 +492,7 @@ function AppConOrg({
             title={isDarkMode ? 'Modo claro' : 'Modo oscuro'}
             aria-label={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
           >
-            {isDarkMode ? '○' : '●'}
+            <span aria-hidden="true">{isDarkMode ? '☀️' : '🌙'}</span>
           </button>
           </div>
         </div>
