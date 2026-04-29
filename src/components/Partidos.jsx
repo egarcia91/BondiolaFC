@@ -151,6 +151,17 @@ function Partidos({ organizacionId, isAdmin, isAuthenticated, jugadorActual }) {
     return entrada.nombre ? `invitado (${entrada.nombre})` : 'invitado'
   }
 
+  /** Vista móvil: invitados como «Nombre (i)» en lugar de «invitado (Nombre)». */
+  const displayJugadorMovil = (entrada) => {
+    if (!entrada) return 'invitado (i)'
+    if (entrada.id) {
+      const j = jugadoresById.get(entrada.id)
+      return (j && (j.apodo || j.nombre)) || entrada.nombre || 'invitado'
+    }
+    const nom = (entrada.nombre || '').trim()
+    return nom ? `${nom} (i)` : 'invitado (i)'
+  }
+
   /** Cantidad de goles de un jugador en un partido (por equipo). */
   const getGolesEnPartido = (partido, equipoKey, entrada) => {
     const arr = partido?.[equipoKey]?.golesAnotadores ?? []
@@ -166,11 +177,25 @@ function Partidos({ organizacionId, isAdmin, isAuthenticated, jugadorActual }) {
 
   const GolesIcon = ({ count }) => {
     if (!count || count < 1) return null
+    const title = `${count} gol${count > 1 ? 'es' : ''}`
+    if (count === 1) {
+      return (
+        <span className="partido-jugador-goles" title={title} aria-hidden>
+          <span className="partido-gol-icon">⚽</span>
+        </span>
+      )
+    }
     return (
-      <span className="partido-jugador-goles" title={`${count} gol${count > 1 ? 'es' : ''}`} aria-hidden>
-        {Array.from({ length: count }, (_, i) => (
-          <span key={i} className="partido-gol-icon" aria-hidden>⚽</span>
-        ))}
+      <span className="partido-jugador-goles partido-jugador-goles--has-multi" title={title} aria-hidden>
+        <span className="partido-jugador-goles-expanded">
+          {Array.from({ length: count }, (_, i) => (
+            <span key={i} className="partido-gol-icon">⚽</span>
+          ))}
+        </span>
+        <span className="partido-jugador-goles-compact">
+          <span className="partido-gol-icon">⚽</span>
+          <span className="partido-gol-mult">x{count}</span>
+        </span>
       </span>
     )
   }
@@ -439,10 +464,18 @@ function Partidos({ organizacionId, isAdmin, isAuthenticated, jugadorActual }) {
                           const goles = getGolesEnPartido(partido, 'equipoLocal', jugador)
                           const esMvp = partido.mvpResultado?.some((r) => r.jugadorId === jugador?.id)
                           return (
-                            <li key={idx}>
-                              {displayJugador(jugador)}
-                              {esMvp && <span className="partido-jugador-mvp" title="MVP del partido" aria-hidden>🏆</span>}
-                              <GolesIcon count={goles} />
+                            <li key={idx} className="jugadores-lista-item--local">
+                              <span className="partido-jugador-nombre-wrap">
+                                {displayJugador(jugador)}
+                              </span>
+                              <span className="partido-jugador-goles-slot">
+                                <GolesIcon count={goles} />
+                                {esMvp && (
+                                  <span className="partido-jugador-mvp" title="MVP del partido" aria-hidden>
+                                    🏆
+                                  </span>
+                                )}
+                              </span>
                               <span className="partido-jugador-elo-wrap">
                                 <span className="partido-jugador-elo">{getElo(jugador)}</span>
                                 {delta != null && delta !== 0 && (
@@ -464,10 +497,7 @@ function Partidos({ organizacionId, isAdmin, isAuthenticated, jugadorActual }) {
                           const goles = getGolesEnPartido(partido, 'equipoVisitante', jugador)
                           const esMvp = partido.mvpResultado?.some((r) => r.jugadorId === jugador?.id)
                           return (
-                            <li key={idx}>
-                              {displayJugador(jugador)}
-                              {esMvp && <span className="partido-jugador-mvp" title="MVP del partido" aria-hidden>🏆</span>}
-                              <GolesIcon count={goles} />
+                            <li key={idx} className="jugadores-lista-item--visitante">
                               <span className="partido-jugador-elo-wrap">
                                 <span className="partido-jugador-elo">{getElo(jugador)}</span>
                                 {delta != null && delta !== 0 && (
@@ -476,6 +506,15 @@ function Partidos({ organizacionId, isAdmin, isAuthenticated, jugadorActual }) {
                                   </span>
                                 )}
                               </span>
+                              <span className="partido-jugador-goles-slot">
+                                <GolesIcon count={goles} />
+                                {esMvp && (
+                                  <span className="partido-jugador-mvp" title="MVP del partido" aria-hidden>
+                                    🏆
+                                  </span>
+                                )}
+                              </span>
+                              <span className="partido-jugador-nombre-wrap">{displayJugador(jugador)}</span>
                             </li>
                           )
                         })}
@@ -643,10 +682,18 @@ function Partidos({ organizacionId, isAdmin, isAuthenticated, jugadorActual }) {
                             const goles = getGolesEnPartido(partido, 'equipoLocal', jugador)
                             const esMvp = partido.mvpResultado?.some((r) => r.jugadorId === jugador?.id)
                             return (
-                              <li key={idx}>
-                                {displayJugador(jugador)}
-                                {esMvp && <span className="partido-jugador-mvp" title="MVP del partido" aria-hidden>🏆</span>}
-                                <GolesIcon count={goles} />
+                              <li key={idx} className="jugadores-lista-item--local">
+                                <span className="partido-jugador-nombre-wrap">
+                                  {displayJugadorMovil(jugador)}
+                                </span>
+                                <span className="partido-jugador-goles-slot">
+                                  <GolesIcon count={goles} />
+                                  {esMvp && (
+                                    <span className="partido-jugador-mvp" title="MVP del partido" aria-hidden>
+                                      🏆
+                                    </span>
+                                  )}
+                                </span>
                                 <span className="partido-jugador-elo-wrap">
                                   <span className="partido-jugador-elo">{getElo(jugador)}</span>
                                   {delta != null && delta !== 0 && (
@@ -665,10 +712,7 @@ function Partidos({ organizacionId, isAdmin, isAuthenticated, jugadorActual }) {
                             const goles = getGolesEnPartido(partido, 'equipoVisitante', jugador)
                             const esMvp = partido.mvpResultado?.some((r) => r.jugadorId === jugador?.id)
                             return (
-                              <li key={idx}>
-                                {displayJugador(jugador)}
-                                {esMvp && <span className="partido-jugador-mvp" title="MVP del partido" aria-hidden>🏆</span>}
-                                <GolesIcon count={goles} />
+                              <li key={idx} className="jugadores-lista-item--visitante">
                                 <span className="partido-jugador-elo-wrap">
                                   <span className="partido-jugador-elo">{getElo(jugador)}</span>
                                   {delta != null && delta !== 0 && (
@@ -677,6 +721,15 @@ function Partidos({ organizacionId, isAdmin, isAuthenticated, jugadorActual }) {
                                     </span>
                                   )}
                                 </span>
+                                <span className="partido-jugador-goles-slot">
+                                  <GolesIcon count={goles} />
+                                  {esMvp && (
+                                    <span className="partido-jugador-mvp" title="MVP del partido" aria-hidden>
+                                      🏆
+                                    </span>
+                                  )}
+                                </span>
+                                <span className="partido-jugador-nombre-wrap">{displayJugadorMovil(jugador)}</span>
                               </li>
                             )
                           })}
@@ -721,7 +774,7 @@ function Partidos({ organizacionId, isAdmin, isAuthenticated, jugadorActual }) {
                           partido={partido}
                           jugadoresById={jugadoresById}
                           jugadorActual={jugadorActual}
-                          displayJugador={displayJugador}
+                          displayJugador={displayJugadorMovil}
                           mvpVotandoPartidoId={mvpVotandoPartidoId}
                           mvpSeleccionadoId={mvpSeleccionadoId}
                           setMvpVotandoPartidoId={setMvpVotandoPartidoId}

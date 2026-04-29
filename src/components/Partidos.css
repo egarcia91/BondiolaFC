@@ -228,27 +228,85 @@
 }
 
 .jugadores-lista li {
-  padding: 0.5rem;
+  padding: 0.4rem 0.45rem;
   background-color: var(--bg-color);
   border-radius: 6px;
   color: var(--text-secondary);
-  font-size: 0.9rem;
-  display: flex;
-  justify-content: space-between;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
+}
+
+.jugadores-lista-item--local .partido-jugador-nombre-wrap {
+  justify-self: start;
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jugadores-lista-item--local .partido-jugador-goles-slot {
+  justify-self: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.2rem;
+  flex-wrap: nowrap;
+  max-width: 100%;
+}
+
+.jugadores-lista-item--local .partido-jugador-goles {
+  margin-left: 0;
+}
+
+.jugadores-lista-item--local .partido-jugador-elo-wrap {
+  justify-self: end;
+}
+
+.jugadores-lista-item--visitante .partido-jugador-elo-wrap {
+  justify-self: start;
+}
+
+.jugadores-lista-item--visitante .partido-jugador-goles-slot {
+  justify-self: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.2rem;
+  flex-wrap: nowrap;
+  max-width: 100%;
+}
+
+.jugadores-lista-item--visitante .partido-jugador-goles {
+  margin-left: 0;
+}
+
+.jugadores-lista-item--visitante .partido-jugador-nombre-wrap {
+  justify-self: end;
+  text-align: right;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .partido-jugador-elo-wrap {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  flex-wrap: nowrap;
+  gap: 0.2rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .partido-jugador-elo {
   font-weight: 600;
   color: var(--text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.72rem;
 }
 
 .partido-jugador-goles {
@@ -258,20 +316,75 @@
   margin-left: 0.35rem;
 }
 
+.partido-jugador-goles--has-multi {
+  gap: 0;
+}
+
+.partido-jugador-goles-expanded {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.partido-jugador-goles-compact {
+  display: none;
+  align-items: center;
+  gap: 0.08rem;
+  white-space: nowrap;
+}
+
+.partido-gol-mult {
+  font-size: 0.78em;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--text-secondary);
+}
+
 .partido-gol-icon {
-  font-size: 0.9em;
+  font-size: 0.82em;
   line-height: 1;
 }
 
+@media (max-width: 768px) {
+  .partido-jugador-goles--has-multi .partido-jugador-goles-expanded {
+    display: none;
+  }
+
+  .partido-jugador-goles--has-multi .partido-jugador-goles-compact {
+    display: inline-flex;
+  }
+
+  .partido-jugadores .jugadores-lista li,
+  .partido-detail-jugadores .jugadores-lista li {
+    font-size: 0.68rem;
+    padding: 0.32rem 0.38rem;
+    gap: 0.28rem;
+  }
+
+  .partido-jugadores .partido-jugador-elo,
+  .partido-detail-jugadores .partido-jugador-elo {
+    font-size: 0.65rem;
+  }
+
+  .partido-jugadores .partido-elo-delta,
+  .partido-detail-jugadores .partido-elo-delta {
+    font-size: 0.65rem;
+  }
+}
+
 .partido-jugador-mvp {
-  margin-left: 0.25rem;
+  margin-left: 0;
   display: inline-block;
+  font-size: 0.85em;
+  line-height: 1;
   filter: sepia(0.25) saturate(2.2) hue-rotate(-8deg);
 }
 
 .partido-elo-delta {
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.72rem;
+  flex-shrink: 0;
 }
 
 .partido-elo-delta-positivo {

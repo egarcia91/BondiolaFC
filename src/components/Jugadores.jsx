@@ -273,6 +273,9 @@ function Jugadores({ organizacionId, isAdmin }) {
         if (!cancelled) {
           setJugadores(jugadoresData)
           setPartidos(partidosData)
+          if (!partidosData.length) {
+            setOrdenPor('ninguno')
+          }
         }
       })
       .catch((err) => {
