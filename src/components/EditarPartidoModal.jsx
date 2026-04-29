@@ -169,7 +169,7 @@ function EditarPartidoModal({ partido, jugadores = [], onClose, onSaved }) {
 
       const aplicarEstadisticas = partido.estadisticasAplicadas !== true
       if (aplicarEstadisticas) {
-        const jugadores = await getJugadores()
+        const jugadores = await getJugadores(partido.organizacionId || null)
         const { updates: eloUpdates, eloDeltasLocal, eloDeltasVisitante } = computeEloUpdatesForPartido(
           partidoActualizado,
           ganador,
@@ -235,7 +235,7 @@ function EditarPartidoModal({ partido, jugadores = [], onClose, onSaved }) {
         const oldCount = mergeCounts(oldRojo, oldAzul)
         const newCount = mergeCounts(newRojo, newAzul)
         const allIds = new Set([...oldCount.keys(), ...newCount.keys()])
-        const jugadoresList = await getJugadores()
+        const jugadoresList = await getJugadores(partido.organizacionId || null)
         const jugadoresByIdMap = new Map(jugadoresList.map((j) => [j.id, j]))
         const toUpdate = []
         allIds.forEach((id) => {
