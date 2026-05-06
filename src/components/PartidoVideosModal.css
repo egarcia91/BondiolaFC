@@ -62,6 +62,22 @@
   color: var(--text-primary);
 }
 
+.partido-videos-modal-label--after {
+  margin-top: 1rem;
+}
+
+.partido-videos-modal-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-color);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
 .partido-videos-modal-textarea {
   width: 100%;
   box-sizing: border-box;

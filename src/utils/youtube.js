@@ -31,6 +31,39 @@ export function youtubeEmbedSrc(videoId) {
 }
 
 /**
+ * Extrae el ID de una playlist (parámetro list= en youtube.com).
+ * No acepta strings de 11 caracteres solos (se confunden con IDs de video).
+ */
+export function parseYouTubePlaylistId(raw) {
+  if (raw == null) return null
+  const s = String(raw).trim()
+  if (!s) return null
+  try {
+    const u = new URL(s)
+    const host = u.hostname.replace(/^www\./, '')
+    if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtube-nocookie.com') {
+      const list = u.searchParams.get('list')
+      if (list && /^[a-zA-Z0-9_-]+$/.test(list) && list.length >= 8) return list
+    }
+  } catch {
+    /* texto plano */
+  }
+  if (/^[a-zA-Z0-9_-]+$/.test(s) && s.length >= 10 && !/^[a-zA-Z0-9_-]{11}$/.test(s)) return s
+  return null
+}
+
+/** Embed oficial de una playlist completa (reproductor con lista). */
+export function youtubePlaylistEmbedSrc(playlistId) {
+  if (!playlistId || typeof playlistId !== 'string') return null
+  const s = playlistId.trim()
+  const id =
+    parseYouTubePlaylistId(s) ||
+    (/^[a-zA-Z0-9_-]+$/.test(s) && s.length >= 10 && !/^[a-zA-Z0-9_-]{11}$/.test(s) ? s : null)
+  if (!id) return null
+  return `https://www.youtube.com/embed/videoseries?list=${encodeURIComponent(id)}`
+}
+
+/**
  * Normaliza entradas de usuario (una por línea) a IDs válidos.
  * @returns {{ ids: string[], invalid: string[] }}
  */
@@ -68,4 +101,13 @@ export function partidoVideosYouTubeIds(partido) {
     }
   }
   return out
+}
+
+/** ID de playlist guardado en el partido (string o URL legada). */
+export function partidoVideosYouTubePlaylistId(partido) {
+  const raw = partido?.videosYouTubePlaylist
+  if (raw == null || raw === '') return null
+  const parsed = parseYouTubePlaylistId(String(raw).trim())
+  if (parsed) return parsed
+  return null
 }

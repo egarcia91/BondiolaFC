@@ -1,10 +1,16 @@
 import { useState, useEffect } from 'react'
 import { updatePartido } from '../services/firestore'
-import { partidoVideosYouTubeIds, parseYouTubeLines } from '../utils/youtube'
+import {
+  partidoVideosYouTubeIds,
+  partidoVideosYouTubePlaylistId,
+  parseYouTubeLines,
+  parseYouTubePlaylistId,
+} from '../utils/youtube'
 import './PartidoVideosModal.css'
 
 function PartidoVideosModal({ partido, onClose, onSaved }) {
   const [texto, setTexto] = useState('')
+  const [playlistTexto, setPlaylistTexto] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -12,6 +18,8 @@ function PartidoVideosModal({ partido, onClose, onSaved }) {
     if (!partido) return
     const ids = partidoVideosYouTubeIds(partido)
     setTexto(ids.length ? ids.join('\n') : '')
+    const pl = partidoVideosYouTubePlaylistId(partido)
+    setPlaylistTexto(pl ? `https://www.youtube.com/playlist?list=${pl}` : '')
     setError('')
   }, [partido])
 
@@ -24,9 +32,23 @@ function PartidoVideosModal({ partido, onClose, onSaved }) {
       setError(`No se reconocen como YouTube: ${invalid.slice(0, 3).join('; ')}${invalid.length > 3 ? '…' : ''}`)
       return
     }
+    const plTrim = playlistTexto.trim()
+    let playlistId = null
+    if (plTrim) {
+      playlistId = parseYouTubePlaylistId(plTrim)
+      if (!playlistId) {
+        setError(
+          'La playlist no es válida. Usá un enlace como https://www.youtube.com/playlist?list=… o el ID de la lista (no el de un video suelto).'
+        )
+        return
+      }
+    }
     setSaving(true)
     try {
-      await updatePartido(partido.id, { videosYouTube: ids })
+      await updatePartido(partido.id, {
+        videosYouTube: ids,
+        videosYouTubePlaylist: playlistId,
+      })
       onSaved?.()
       onClose?.()
     } catch (err) {
@@ -48,11 +70,26 @@ function PartidoVideosModal({ partido, onClose, onSaved }) {
           </button>
         </div>
         <p className="partido-videos-modal-desc">
-          Pegá una URL o el ID del video por línea. Ejemplos: <code>https://www.youtube.com/watch?v=…</code>, <code>https://youtu.be/…</code>
+          Videos: una URL o ID por línea (
+          <code>watch?v=…</code>, <code>youtu.be/…</code>). Playlist (opcional): enlace con{' '}
+          <code>list=…</code> o solo el ID de la lista; se muestra un reproductor con toda la lista.
         </p>
         <form onSubmit={handleGuardar}>
-          <label htmlFor="partido-videos-textarea" className="partido-videos-modal-label">
-            Enlaces (uno por línea)
+          <label htmlFor="partido-videos-playlist" className="partido-videos-modal-label">
+            Playlist de YouTube (opcional)
+          </label>
+          <input
+            id="partido-videos-playlist"
+            type="url"
+            className="partido-videos-modal-input"
+            value={playlistTexto}
+            onChange={(e) => setPlaylistTexto(e.target.value)}
+            placeholder="https://www.youtube.com/playlist?list=…"
+            disabled={saving}
+            autoComplete="off"
+          />
+          <label htmlFor="partido-videos-textarea" className="partido-videos-modal-label partido-videos-modal-label--after">
+            Videos sueltos (uno por línea)
           </label>
           <textarea
             id="partido-videos-textarea"
