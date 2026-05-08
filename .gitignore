@@ -16,6 +16,11 @@ dist-ssr
 firebase-sa.json
 public/firebase/
 
+# Garmin Connect IQ (clave local, builds)
+garmin-connectiq/developer_key.der
+garmin-connectiq/*.prg
+garmin-connectiq/gen/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

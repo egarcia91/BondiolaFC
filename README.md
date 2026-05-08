@@ -42,6 +42,7 @@ npm run dev
 
 ```
 BondiolaFC/
+├── garmin-connectiq/          # Watch app Garmin Connect IQ (demo; ver README allí)
 ├── src/
 │   ├── components/
 │   │   ├── Jugadores.jsx      # Componente de listado de jugadores
