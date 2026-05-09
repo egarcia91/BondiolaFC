@@ -18,6 +18,7 @@ public/firebase/
 
 # Garmin Connect IQ (clave local, builds)
 garmin-connectiq/developer_key.der
+garmin-connectiq/developer_key.pem
 garmin-connectiq/*.prg
 garmin-connectiq/gen/
 
