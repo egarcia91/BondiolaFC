@@ -83,6 +83,52 @@ function buildEloHistorial(j, newElo) {
 }
 
 /**
+ * Constantes del sistema de Elo "agresivo e individual".
+ *
+ * - La base por ganar/perder es 20 puntos; empatar usa una base de 10.
+ * - El cambio real de cada jugador se ajusta según la distancia (en %) entre su
+ *   Elo y el Elo promedio del equipo RIVAL:
+ *     · Ganar siendo mejor que el rival suma menos (mínimo 1).
+ *     · Ganar siendo peor que el rival suma más (máximo {@link ELO_MAX_CAMBIO}).
+ *     · Perder siendo mejor que el rival resta más (máximo {@link ELO_MAX_CAMBIO}).
+ *     · Perder siendo peor que el rival resta menos (mínimo 1).
+ */
+export const ELO_BASE_GANAR = 20
+export const ELO_BASE_EMPATE = 10
+export const ELO_MIN_CAMBIO = 1
+export const ELO_MAX_CAMBIO = 30
+
+const clamp = (v, min, max) => Math.min(max, Math.max(min, v))
+
+/**
+ * Calcula el cambio de Elo (sin redondear) de UN jugador según su Elo y el Elo
+ * promedio del equipo rival.
+ *
+ * @param {number} eloJugador - Elo actual del jugador.
+ * @param {number} avgRival - Elo promedio del equipo rival.
+ * @param {'win'|'loss'|'tie'} resultado - Resultado para este jugador.
+ * @returns {number} Delta de Elo ya acotado (puede ser fraccionario).
+ */
+export function calcularDeltaElo(eloJugador, avgRival, resultado) {
+  // ratio > 0: el jugador es MEJOR que el promedio rival (ej. 0.10 = 10% mejor).
+  // ratio < 0: el jugador es PEOR que el promedio rival.
+  const ratio = avgRival > 0 ? (eloJugador - avgRival) / avgRival : 0
+
+  if (resultado === 'win') {
+    // Base 20. Si es 10% mejor → 18; si es 10% peor → 22. Acotado a [1, 30].
+    return clamp(ELO_BASE_GANAR * (1 - ratio), ELO_MIN_CAMBIO, ELO_MAX_CAMBIO)
+  }
+  if (resultado === 'loss') {
+    // Base -20. Si era 10% mejor → -22 (penaliza más); si era 10% peor → -18.
+    // Acotado a [-30, -1].
+    return clamp(-ELO_BASE_GANAR * (1 + ratio), -ELO_MAX_CAMBIO, -ELO_MIN_CAMBIO)
+  }
+  // Empate: base 10 escalada por la distancia. Si los Elos son iguales el cambio
+  // es 0; el favorito (mejor que el rival) pierde un poco y el de menor Elo gana.
+  return clamp(-ELO_BASE_EMPATE * ratio, -ELO_MAX_CAMBIO, ELO_MAX_CAMBIO)
+}
+
+/**
  * @param {Object} partido
  * @param {string} ganador
  * @param {Array} jugadores
@@ -103,167 +149,50 @@ export function computeEloUpdatesForPartido(partido, ganador, jugadores) {
   const avgRojo = elosRojo.length ? Math.round(elosRojo.reduce((a, b) => a + b, 0) / elosRojo.length) : 0
   const avgAzul = elosAzul.length ? Math.round(elosAzul.reduce((a, b) => a + b, 0) / elosAzul.length) : 0
 
-  const diff = Math.abs(avgRojo - avgAzul)
   const updates = []
   const eloDeltasLocal = []
   const eloDeltasVisitante = []
 
   const nombreLocal = partido.equipoLocal?.nombre || 'Rojo'
-  const nombreVisitante = partido.equipoVisitante?.nombre || 'Azul'
   const ganadorEsLocal = ganador === nombreLocal
+  const esEmpate = ganador === 'Empate'
 
-  if (ganador === 'Empate') {
-    if (diff === 0) {
-      listaRojo.forEach((entrada) => {
-        const j = getJugadorFromEntrada(entrada)
-        eloDeltasLocal.push(0)
-        if (!j) return
-        const eloActual = j.elo ?? 900
-        updates.push({
-          id: j.id,
-          newElo: eloActual,
-          partidos: (j.partidos ?? 0) + 1,
-          victorias: j.victorias ?? 0,
-          partidosEmpatados: (j.partidosEmpatados ?? 0) + 1,
-          partidosPerdidos: j.partidosPerdidos ?? 0,
-          eloHistorial: buildEloHistorial(j, eloActual),
-        })
-      })
-      listaAzul.forEach((entrada) => {
-        const j = getJugadorFromEntrada(entrada)
-        eloDeltasVisitante.push(0)
-        if (!j) return
-        const eloActual = j.elo ?? 900
-        updates.push({
-          id: j.id,
-          newElo: eloActual,
-          partidos: (j.partidos ?? 0) + 1,
-          victorias: j.victorias ?? 0,
-          partidosEmpatados: (j.partidosEmpatados ?? 0) + 1,
-          partidosPerdidos: j.partidosPerdidos ?? 0,
-          eloHistorial: buildEloHistorial(j, eloActual),
-        })
-      })
-      return { updates, eloDeltasLocal, eloDeltasVisitante }
-    }
-    const half = diff / 2
-    const deltaRojo = Math.round(avgRojo <= avgAzul ? half : -half)
-    const deltaAzul = Math.round(avgAzul <= avgRojo ? half : -half)
-    listaRojo.forEach((entrada) => {
+  /**
+   * Procesa una lista de jugadores de un equipo.
+   * @param {Array} lista
+   * @param {number} avgRival - Elo promedio del equipo contrario.
+   * @param {boolean} ganoEsteEquipo
+   * @param {Array<number>} deltasOut - Array donde apilar el delta por índice.
+   */
+  const procesarEquipo = (lista, avgRival, ganoEsteEquipo, deltasOut) => {
+    const resultado = esEmpate ? 'tie' : ganoEsteEquipo ? 'win' : 'loss'
+    lista.forEach((entrada) => {
       const j = getJugadorFromEntrada(entrada)
-      eloDeltasLocal.push(j ? deltaRojo : 0)
-      if (!j) return
-      const newElo = Math.max(0, (j.elo ?? 900) + deltaRojo)
-      const newEloR = Math.round(newElo)
+      if (!j) {
+        deltasOut.push(0)
+        return
+      }
+      const eloActual = j.elo ?? 900
+      const deltaExacto = calcularDeltaElo(eloActual, avgRival, resultado)
+      const delta = Math.round(deltaExacto)
+      deltasOut.push(delta)
+      const newElo = Math.round(Math.max(0, eloActual + delta))
+      const gano = resultado === 'win'
+      const empato = resultado === 'tie'
       updates.push({
         id: j.id,
-        newElo: newEloR,
+        newElo,
         partidos: (j.partidos ?? 0) + 1,
-        victorias: j.victorias ?? 0,
-        partidosEmpatados: (j.partidosEmpatados ?? 0) + 1,
-        partidosPerdidos: j.partidosPerdidos ?? 0,
+        victorias: (j.victorias ?? 0) + (gano ? 1 : 0),
+        partidosEmpatados: (j.partidosEmpatados ?? 0) + (empato ? 1 : 0),
+        partidosPerdidos: (j.partidosPerdidos ?? 0) + (!gano && !empato ? 1 : 0),
         eloHistorial: buildEloHistorial(j, newElo),
       })
     })
-    listaAzul.forEach((entrada) => {
-      const j = getJugadorFromEntrada(entrada)
-      eloDeltasVisitante.push(j ? deltaAzul : 0)
-      if (!j) return
-      const newElo = Math.max(0, (j.elo ?? 900) + deltaAzul)
-      const newEloR = Math.round(newElo)
-      updates.push({
-        id: j.id,
-        newElo: newEloR,
-        partidos: (j.partidos ?? 0) + 1,
-        victorias: j.victorias ?? 0,
-        partidosEmpatados: (j.partidosEmpatados ?? 0) + 1,
-        partidosPerdidos: j.partidosPerdidos ?? 0,
-        eloHistorial: buildEloHistorial(j, newElo),
-      })
-    })
-    return { updates, eloDeltasLocal, eloDeltasVisitante }
   }
 
-  const DELTA_ELO_EMPATE_PROMEDIO = 20
-  if (diff === 0) {
-    const deltaRojo = ganadorEsLocal ? DELTA_ELO_EMPATE_PROMEDIO : -DELTA_ELO_EMPATE_PROMEDIO
-    const deltaAzul = ganadorEsLocal ? -DELTA_ELO_EMPATE_PROMEDIO : DELTA_ELO_EMPATE_PROMEDIO
-    listaRojo.forEach((entrada) => {
-      const j = getJugadorFromEntrada(entrada)
-      eloDeltasLocal.push(j ? deltaRojo : 0)
-      if (!j) return
-      const newElo = Math.max(0, (j.elo ?? 900) + deltaRojo)
-      const newEloR = Math.round(newElo)
-      const win = ganadorEsLocal
-      updates.push({
-        id: j.id,
-        newElo: newEloR,
-        partidos: (j.partidos ?? 0) + 1,
-        victorias: (j.victorias ?? 0) + (win ? 1 : 0),
-        partidosEmpatados: j.partidosEmpatados ?? 0,
-        partidosPerdidos: (j.partidosPerdidos ?? 0) + (win ? 0 : 1),
-        eloHistorial: buildEloHistorial(j, newElo),
-      })
-    })
-    listaAzul.forEach((entrada) => {
-      const j = getJugadorFromEntrada(entrada)
-      eloDeltasVisitante.push(j ? deltaAzul : 0)
-      if (!j) return
-      const newElo = Math.max(0, (j.elo ?? 900) + deltaAzul)
-      const newEloR = Math.round(newElo)
-      const win = !ganadorEsLocal
-      updates.push({
-        id: j.id,
-        newElo: newEloR,
-        partidos: (j.partidos ?? 0) + 1,
-        victorias: (j.victorias ?? 0) + (win ? 1 : 0),
-        partidosEmpatados: j.partidosEmpatados ?? 0,
-        partidosPerdidos: (j.partidosPerdidos ?? 0) + (win ? 0 : 1),
-        eloHistorial: buildEloHistorial(j, newElo),
-      })
-    })
-    return { updates, eloDeltasLocal, eloDeltasVisitante }
-  }
+  procesarEquipo(listaRojo, avgAzul, !esEmpate && ganadorEsLocal, eloDeltasLocal)
+  procesarEquipo(listaAzul, avgRojo, !esEmpate && !ganadorEsLocal, eloDeltasVisitante)
 
-  const factor = ganadorEsLocal ? (avgRojo >= avgAzul ? 0.25 : 0.75) : (avgAzul >= avgRojo ? 0.25 : 0.75)
-  const deltaGanador = diff * factor
-  const deltaPerdedor = -diff * factor
-  const deltaRojo = Math.round(ganadorEsLocal ? deltaGanador : deltaPerdedor)
-  const deltaAzul = Math.round(ganadorEsLocal ? deltaPerdedor : deltaGanador)
-
-  listaRojo.forEach((entrada) => {
-    const j = getJugadorFromEntrada(entrada)
-    eloDeltasLocal.push(j ? deltaRojo : 0)
-    if (!j) return
-    const newElo = Math.max(0, (j.elo ?? 900) + deltaRojo)
-    const newEloR = Math.round(newElo)
-    const win = ganadorEsLocal
-    updates.push({
-      id: j.id,
-      newElo: newEloR,
-      partidos: (j.partidos ?? 0) + 1,
-      victorias: (j.victorias ?? 0) + (win ? 1 : 0),
-      partidosEmpatados: j.partidosEmpatados ?? 0,
-      partidosPerdidos: (j.partidosPerdidos ?? 0) + (win ? 0 : 1),
-      eloHistorial: buildEloHistorial(j, newElo),
-    })
-  })
-  listaAzul.forEach((entrada) => {
-    const j = getJugadorFromEntrada(entrada)
-    eloDeltasVisitante.push(j ? deltaAzul : 0)
-    if (!j) return
-    const newElo = Math.max(0, (j.elo ?? 900) + deltaAzul)
-    const newEloR = Math.round(newElo)
-    const win = !ganadorEsLocal
-    updates.push({
-      id: j.id,
-      newElo: newEloR,
-      partidos: (j.partidos ?? 0) + 1,
-      victorias: (j.victorias ?? 0) + (win ? 1 : 0),
-      partidosEmpatados: j.partidosEmpatados ?? 0,
-      partidosPerdidos: (j.partidosPerdidos ?? 0) + (win ? 0 : 1),
-      eloHistorial: buildEloHistorial(j, newElo),
-    })
-  })
   return { updates, eloDeltasLocal, eloDeltasVisitante }
 }
