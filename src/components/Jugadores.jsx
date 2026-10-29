@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { getJugadores, getPartidos, normalizePartidos } from '../services/firestore'
 import NuevoJugadorModal from './NuevoJugadorModal'
 import AdminEditarJugadorModal from './AdminEditarJugadorModal'
@@ -246,6 +246,9 @@ function Jugadores({ organizacionId, isAdmin }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filtroPosicion, setFiltroPosicion] = useState('')
+  /** Menú del filtro de posición (oculto detrás del ícono de embudo). */
+  const [filtroPosicionAbierto, setFiltroPosicionAbierto] = useState(false)
+  const filtroPosicionRef = useRef(null)
   const [ordenPor, setOrdenPor] = useState('presentes')
   const [modoVista, setModoVista] = useState('listado')
   const [compararIdA, setCompararIdA] = useState('')
@@ -341,6 +344,24 @@ function Jugadores({ organizacionId, isAdmin }) {
   useEffect(() => {
     if (modoVista !== 'comparar') setCompararPorPartido(false)
   }, [modoVista])
+
+  useEffect(() => {
+    if (!filtroPosicionAbierto) return
+    const cerrarSiAfuera = (e) => {
+      if (filtroPosicionRef.current && !filtroPosicionRef.current.contains(e.target)) {
+        setFiltroPosicionAbierto(false)
+      }
+    }
+    const cerrarConEscape = (e) => {
+      if (e.key === 'Escape') setFiltroPosicionAbierto(false)
+    }
+    document.addEventListener('mousedown', cerrarSiAfuera)
+    document.addEventListener('keydown', cerrarConEscape)
+    return () => {
+      document.removeEventListener('mousedown', cerrarSiAfuera)
+      document.removeEventListener('keydown', cerrarConEscape)
+    }
+  }, [filtroPosicionAbierto])
 
   useEffect(() => {
     if (modoVista !== 'comparar') return
@@ -547,20 +568,6 @@ function Jugadores({ organizacionId, isAdmin }) {
         <div
           className={`jugadores-controles ${modoVista === 'comparar' ? 'jugadores-controles--comparar' : ''}`}
         >
-          <div className="jugadores-filtro">
-            <label htmlFor="filtro-posicion" className="controles-label">Posición</label>
-            <select
-              id="filtro-posicion"
-              value={filtroPosicion}
-              onChange={(e) => setFiltroPosicion(e.target.value)}
-              className="controles-select"
-            >
-              <option value="">Todas</option>
-              {POSICIONES.map((pos) => (
-                <option key={pos} value={pos}>{pos}</option>
-              ))}
-            </select>
-          </div>
           <div className="jugadores-vista">
             <label htmlFor="jugadores-modo-vista" className="controles-label">Vista</label>
             <select
@@ -661,6 +668,47 @@ function Jugadores({ organizacionId, isAdmin }) {
               </div>
             </div>
           )}
+          <div className="jugadores-filtro-posicion" ref={filtroPosicionRef}>
+            <button
+              type="button"
+              className={`jugadores-filtro-btn ${filtroPosicion ? 'jugadores-filtro-btn--activo' : ''}`}
+              aria-label={filtroPosicion ? `Filtrar por posición (${filtroPosicion})` : 'Filtrar por posición'}
+              title={filtroPosicion ? `Posición: ${filtroPosicion}` : 'Filtrar por posición'}
+              aria-expanded={filtroPosicionAbierto}
+              aria-controls="filtro-posicion-menu"
+              onClick={() => setFiltroPosicionAbierto((v) => !v)}
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                <path
+                  d="M3 5h18l-7 8.5V19l-4 2v-7.5L3 5z"
+                  fill={filtroPosicion ? 'currentColor' : 'none'}
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+            {filtroPosicionAbierto && (
+              <div id="filtro-posicion-menu" className="jugadores-filtro-menu">
+                <label htmlFor="filtro-posicion" className="controles-label">Posición</label>
+                <select
+                  id="filtro-posicion"
+                  value={filtroPosicion}
+                  onChange={(e) => {
+                    setFiltroPosicion(e.target.value)
+                    setFiltroPosicionAbierto(false)
+                  }}
+                  className="controles-select"
+                  autoFocus
+                >
+                  <option value="">Todas</option>
+                  {POSICIONES.map((pos) => (
+                    <option key={pos} value={pos}>{pos}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
         </div>
       )}
       
