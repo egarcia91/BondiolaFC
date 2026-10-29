@@ -143,8 +143,60 @@
   flex-wrap: wrap;
 }
 
-.controles-modo-vista-select {
-  min-width: 150px;
+.vista-switch {
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  height: 2.4rem;
+  padding: 3px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background-color: var(--bg-color);
+  cursor: pointer;
+  font: inherit;
+}
+
+.vista-switch:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.vista-switch-thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: 999px;
+  background-color: var(--primary-color);
+  transition: transform 0.2s ease;
+}
+
+.vista-switch--comparar .vista-switch-thumb {
+  transform: translateX(100%);
+}
+
+.vista-switch-opcion {
+  position: relative;
+  padding: 0 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--text-secondary);
+  transition: color 0.2s ease;
+}
+
+.vista-switch:not(.vista-switch--comparar) .vista-switch-opcion--listado,
+.vista-switch--comparar .vista-switch-opcion--comparar {
+  color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vista-switch-thumb,
+  .vista-switch-opcion {
+    transition: none;
+  }
 }
 
 .jugadores-comparar-picks {
@@ -765,6 +817,18 @@
     height: 2.1rem;
   }
 
+  .vista-switch {
+    width: 100%;
+    height: auto;
+    min-height: 1.9rem;
+  }
+
+  .vista-switch-opcion {
+    padding: 0 0.15rem;
+    font-size: 0.8rem;
+  }
+
+  .jugadores-vista,
   .jugadores-orden {
     flex-direction: column;
     align-items: stretch;

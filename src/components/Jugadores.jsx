@@ -581,13 +581,16 @@ function Jugadores({ organizacionId, isAdmin }) {
           className={`jugadores-controles ${modoVista === 'comparar' ? 'jugadores-controles--comparar' : ''}`}
         >
           <div className="jugadores-vista">
-            <label htmlFor="jugadores-modo-vista" className="controles-label">Vista</label>
-            <select
+            <span id="jugadores-modo-vista-label" className="controles-label">Vista</span>
+            <button
+              type="button"
+              role="switch"
               id="jugadores-modo-vista"
-              value={modoVista}
-              className="controles-select controles-modo-vista-select"
-              onChange={(e) => {
-                const v = e.target.value
+              aria-labelledby="jugadores-modo-vista-label"
+              aria-checked={modoVista === 'comparar'}
+              className={`vista-switch ${modoVista === 'comparar' ? 'vista-switch--comparar' : ''}`}
+              onClick={() => {
+                const v = modoVista === 'comparar' ? 'listado' : 'comparar'
                 setModoVista(v)
                 if (v !== 'comparar') return
                 const list = filtroPosicion
@@ -609,9 +612,10 @@ function Jugadores({ organizacionId, isAdmin }) {
                 setCompararIdB(nextB)
               }}
             >
-              <option value="listado">Listado</option>
-              <option value="comparar">Comparar</option>
-            </select>
+              <span className="vista-switch-thumb" aria-hidden="true" />
+              <span className="vista-switch-opcion vista-switch-opcion--listado">Listado</span>
+              <span className="vista-switch-opcion vista-switch-opcion--comparar">Comparar</span>
+            </button>
           </div>
           {modoVista === 'listado' ? (
             <div className="jugadores-orden">
