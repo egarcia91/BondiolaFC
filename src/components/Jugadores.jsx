@@ -10,6 +10,16 @@ import './Jugadores.css'
 
 const POSICIONES = ['Delantero', 'Defensor', 'Mediocampista', 'Arquero']
 
+/** Órdenes que solo incluyen jugadores con al menos {@link MIN_PARTIDOS_ORDEN_EXIGENTE} partidos. */
+const ORDENES_EXIGEN_MIN_PARTIDOS = new Set([
+  'ranking',
+  'goles_partido',
+  'victorias_partido',
+  'empates_partido',
+  'derrotas_partido',
+])
+const MIN_PARTIDOS_ORDEN_EXIGENTE = 10
+
 /** Órdenes por promedio (goles, victorias, empates, derrotas sobre partidos jugados). */
 const ORDEN_PROMEDIO_KEYS = new Set([
   'goles_partido',
@@ -393,6 +403,8 @@ function Jugadores({ organizacionId, isAdmin }) {
     if (ordenPor !== 'ninguno') {
       if (ordenPor === 'presentes' && ultimosPartidosVentana > 0) {
         lista = lista.filter((j) => (presenciasUltimosMap.get(j.id) ?? 0) > 0)
+      } else if (ORDENES_EXIGEN_MIN_PARTIDOS.has(ordenPor)) {
+        lista = lista.filter((j) => (j.partidos ?? 0) >= MIN_PARTIDOS_ORDEN_EXIGENTE)
       } else {
         lista = lista.filter((j) => (j.partidos ?? 0) > 0)
       }
@@ -1209,7 +1221,9 @@ function Jugadores({ organizacionId, isAdmin }) {
             ? 'Ningún jugador en esa posición.'
             : filtroPosicion
               ? 'Ningún jugador en esa posición con los filtros actuales.'
-              : ordenPor !== 'ninguno'
+              : ORDENES_EXIGEN_MIN_PARTIDOS.has(ordenPor)
+                ? `No hay jugadores con al menos ${MIN_PARTIDOS_ORDEN_EXIGENTE} partidos para este orden.`
+                : ordenPor !== 'ninguno'
                 ? 'No hay jugadores con al menos un partido para este orden.'
                 : 'Ningún jugador coincide con los filtros.'}
         </p>
