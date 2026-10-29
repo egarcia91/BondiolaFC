@@ -11,11 +11,48 @@ const REMACHES = [0, 45, 90, 135, 180, 225, 270, 315].map((grados) => {
   return { cx: 60 + 37.5 * Math.cos(rad), cy: 88 + 37.5 * Math.sin(rad) }
 })
 
+/** Hojas de laurel a ambos lados del disco (medalla de goleador). */
+const HOJAS_LAUREL = [-1, 1].flatMap((lado) =>
+  [0, 1, 2, 3, 4].map((i) => {
+    const rad = ((200 - i * 24) * Math.PI) / 180
+    const cx = 60 + lado * -26 * Math.cos(rad)
+    const cy = 90 - 26 * Math.sin(rad)
+    return { cx, cy, rot: lado * (70 - i * 24) }
+  })
+)
+
+function Pelota({ cx, cy, r, m }) {
+  const vertices = [0, 1, 2, 3, 4].map((i) => {
+    const rad = ((-90 + i * 72) * Math.PI) / 180
+    return [cx + r * 0.42 * Math.cos(rad), cy + r * 0.42 * Math.sin(rad)]
+  })
+  return (
+    <>
+      <circle cx={cx} cy={cy} r={r} fill={m.brillo} stroke={m.sombra} strokeWidth="2" />
+      <polygon points={vertices.map(([x, y]) => `${x},${y}`).join(' ')} fill={m.sombra} />
+      <g stroke={m.sombra} strokeWidth="1.6">
+        {vertices.map(([x, y]) => (
+          <path key={`${x}-${y}`} d={`M${x} ${y}L${cx + (x - cx) * 2.35} ${cy + (y - cy) * 2.35}`} />
+        ))}
+      </g>
+    </>
+  )
+}
+
+function NumeroMedalla({ numero, m }) {
+  return (
+    <text x="60" y="108" textAnchor="middle" fontSize={numero > 9 ? 26 : 28} fontWeight="700" fill={m.sombra}>
+      {numero}
+    </text>
+  )
+}
+
 /**
- * Medalla de partidos: mismo diseño para todos los niveles, cambia el material.
+ * Medalla por hitos: mismo diseño para todas, cambian el material y el símbolo central
+ * (`cancha` = partidos, `pelota` = goles, `laureles` = ranking de goleadores).
  * La cinta toma el color del equipo favorito de quien mira (variables `--medalla-cinta*`).
  */
-export default function MedallaIcono({ material = 'bronce', numero, size = 22, className = '' }) {
+export default function MedallaIcono({ material = 'bronce', simbolo = 'cancha', numero, size = 22, className = '' }) {
   const m = MATERIALES[material] ?? MATERIALES.bronce
   return (
     <svg
@@ -47,22 +84,31 @@ export default function MedallaIcono({ material = 'bronce', numero, size = 22, c
           <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="1.6" />
         ))}
       </g>
-      <g fill="none" stroke={m.sombra} strokeWidth="1.6">
-        <rect x="47" y="62" width="26" height="15" rx="1.5" />
-        <path d="M60 62v15" />
-        <circle cx="60" cy="69.5" r="3.2" />
-      </g>
-      {numero != null && (
-        <text
-          x="60"
-          y="108"
-          textAnchor="middle"
-          fontSize={numero > 9 ? 26 : 28}
-          fontWeight="700"
-          fill={m.sombra}
-        >
-          {numero}
-        </text>
+      {simbolo === 'cancha' && (
+        <>
+          <g fill="none" stroke={m.sombra} strokeWidth="1.6">
+            <rect x="47" y="62" width="26" height="15" rx="1.5" />
+            <path d="M60 62v15" />
+            <circle cx="60" cy="69.5" r="3.2" />
+          </g>
+          {numero != null && <NumeroMedalla numero={numero} m={m} />}
+        </>
+      )}
+      {simbolo === 'pelota' && (
+        <>
+          <Pelota cx={60} cy={72} r={10} m={m} />
+          {numero != null && <NumeroMedalla numero={numero} m={m} />}
+        </>
+      )}
+      {simbolo === 'laureles' && (
+        <>
+          <g fill={m.sombra}>
+            {HOJAS_LAUREL.map(({ cx, cy, rot }) => (
+              <ellipse key={`${cx}-${cy}`} cx={cx} cy={cy} rx="3.2" ry="6.5" transform={`rotate(${rot} ${cx} ${cy})`} />
+            ))}
+          </g>
+          <Pelota cx={60} cy={88} r={15} m={m} />
+        </>
       )}
     </svg>
   )

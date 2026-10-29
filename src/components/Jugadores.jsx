@@ -6,7 +6,7 @@ import AdminEliminarJugadorModal from './AdminEliminarJugadorModal'
 import JugadorEloChart from './JugadorEloChart'
 import JugadorEloComparacionChart from './JugadorEloComparacionChart'
 import MedallaIcono from './MedallaIcono'
-import { medallasAutomaticas } from '../constants/medallas'
+import { medallasAutomaticas, calcularPuestosGoleador } from '../constants/medallas'
 import { serieEloParaGrafico } from '../utils/eloSerie'
 import './Jugadores.css'
 
@@ -204,25 +204,32 @@ function diffCompararDerrotasPeor(valSelf, valOtro, valorEsRatio = false) {
  * asignadas a mano en Firestore (`jugador.medallas`: [{ id, nombre, icono, descripcion? }]).
  * Si no tiene ninguna, el espacio queda vacío.
  */
-function medallasDeJugador(jugador) {
+/** @param {{ puestosGoleador?: Map<string, number> }} [contexto] - Datos de toda la organización. */
+function medallasDeJugador(jugador, contexto) {
   const manuales = Array.isArray(jugador.medallas)
     ? jugador.medallas.filter((m) => m && (m.nombre || m.icono))
     : []
-  return [...medallasAutomaticas(jugador), ...manuales]
+  return [...medallasAutomaticas(jugador, contexto), ...manuales]
 }
 
 /** Dibujo de una medalla: SVG para las automáticas, emoji para las asignadas a mano. */
 function MedallaDibujo({ medalla, size }) {
   return medalla.material ? (
-    <MedallaIcono material={medalla.material} numero={medalla.umbral} size={size} className="jugador-medalla-svg" />
+    <MedallaIcono
+      material={medalla.material}
+      simbolo={medalla.simbolo}
+      numero={medalla.umbral}
+      size={size}
+      className="jugador-medalla-svg"
+    />
   ) : (
     <span className="jugador-medalla-icono" aria-hidden="true">{medalla.icono || '🏅'}</span>
   )
 }
 
 /** Solo los dibujos de las medallas, para acompañar el nombre en la lista compacta. */
-function JugadorMedallasIconos({ jugador }) {
-  const lista = medallasDeJugador(jugador)
+function JugadorMedallasIconos({ jugador, contexto }) {
+  const lista = medallasDeJugador(jugador, contexto)
   if (lista.length === 0) return null
   const texto = `Medallas: ${lista.map((m) => m.nombre).join(', ')}`
   return (
@@ -234,8 +241,8 @@ function JugadorMedallasIconos({ jugador }) {
   )
 }
 
-function JugadorMedallas({ jugador }) {
-  const lista = medallasDeJugador(jugador)
+function JugadorMedallas({ jugador, contexto }) {
+  const lista = medallasDeJugador(jugador, contexto)
   return (
     <div className="jugador-medallas">
       <span className="stat-label">Medallas</span>
@@ -467,6 +474,12 @@ function Jugadores({ organizacionId, isAdmin }) {
       return nextA
     })
   }, [modoVista, compararListaKey])
+
+  /** El ranking de goleadores se calcula sobre toda la organización, no sobre la lista filtrada. */
+  const contextoMedallas = useMemo(
+    () => ({ puestosGoleador: calcularPuestosGoleador(jugadores) }),
+    [jugadores]
+  )
 
   const jugadoresFiltradosYOrdenados = useMemo(() => {
     let lista = [...jugadores]
@@ -1059,7 +1072,7 @@ function Jugadores({ organizacionId, isAdmin }) {
                     </div>
                   )}
                 </div>
-                <JugadorMedallas jugador={jugador} />
+                <JugadorMedallas jugador={jugador} contexto={contextoMedallas} />
                 {(typeof jugador.años === 'number' && jugador.años > 0) || jugador.descripcion ? (
                   <div className="jugador-descripcion">
                     {typeof jugador.años === 'number' && jugador.años > 0 && (
@@ -1095,7 +1108,7 @@ function Jugadores({ organizacionId, isAdmin }) {
                     <span className="jugador-list-apodo">
                       {mostrarNumeroPuesto && <span className="jugador-orden-num">{idx + 1}.</span>}
                       {jugador.apodo || jugador.nombre}
-                      <JugadorMedallasIconos jugador={jugador} />
+                      <JugadorMedallasIconos jugador={jugador} contexto={contextoMedallas} />
                     </span>
                     {ordenPor !== 'ranking' && (
                       <span
@@ -1225,7 +1238,7 @@ function Jugadores({ organizacionId, isAdmin }) {
                       </p>
                       <p><strong>MVP:</strong> {jugador.mvp ?? 0}</p>
                     </div>
-                    <JugadorMedallas jugador={jugador} />
+                    <JugadorMedallas jugador={jugador} contexto={contextoMedallas} />
                     {(typeof jugador.años === 'number' && jugador.años > 0) || jugador.descripcion ? (
                       <div className="jugador-descripcion">
                         {typeof jugador.años === 'number' && jugador.años > 0 && (
