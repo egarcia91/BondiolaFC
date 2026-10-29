@@ -39,6 +39,32 @@ function Pelota({ cx, cy, r, m }) {
   )
 }
 
+/** Balón de oro: trofeo único (no es un disco); pelota dorada sobre pedestal con la cinta del equipo. */
+function BalonDeOro({ size, className }) {
+  const m = MATERIALES.oro
+  return (
+    <svg
+      className={className}
+      width={size}
+      height={size * 1.25}
+      viewBox="0 0 120 150"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M30 128h60l6 18H24z" fill={m.sombra} />
+      <path d="M38 116h44l4 12H34z" fill={m.base} />
+      <rect x="24" y="131" width="72" height="7" fill="var(--medalla-cinta)" />
+      <rect x="24" y="131" width="72" height="2" fill="var(--medalla-cinta-brillo)" />
+      <path d="M50 104h20l-2 12H52z" fill={m.sombra} />
+      <circle cx="60" cy="60" r="47" fill={m.sombra} />
+      <circle cx="60" cy="60" r="43" fill={m.base} />
+      <circle cx="52" cy="50" r="30" fill={m.brillo} opacity="0.55" />
+      <Pelota cx={60} cy={60} r={43} m={{ ...m, brillo: 'none' }} />
+      <path d="M33 38a33 33 0 0 1 20-14" fill="none" stroke="#FFF6D6" strokeWidth="4" strokeLinecap="round" opacity="0.8" />
+    </svg>
+  )
+}
+
 function NumeroMedalla({ numero, m }) {
   return (
     <text x="60" y="108" textAnchor="middle" fontSize={numero > 9 ? 26 : 28} fontWeight="700" fill={m.sombra}>
@@ -54,6 +80,7 @@ function NumeroMedalla({ numero, m }) {
  */
 export default function MedallaIcono({ material = 'bronce', simbolo = 'cancha', numero, size = 22, className = '' }) {
   const m = MATERIALES[material] ?? MATERIALES.bronce
+  if (simbolo === 'balon') return <BalonDeOro size={size} className={className} />
   return (
     <svg
       className={className}

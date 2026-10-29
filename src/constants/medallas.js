@@ -116,12 +116,41 @@ export function medallaGoleador(jugador, puestosGoleador) {
 }
 
 /**
+ * Mayor cantidad de MVP de la organización (0 si nadie tiene). Puede ser fraccionaria
+ * (los empates en la votación reparten el MVP).
+ * @param {Array<{ mvp?: number }>} jugadores
+ */
+export function calcularMaximoMvp(jugadores) {
+  return Math.max(0, ...(jugadores ?? []).map((j) => Number(j.mvp) || 0))
+}
+
+/**
+ * Balón de oro: único premio para quien tiene más MVP. Si hay empate, lo comparten.
+ * @param {{ mvp?: number }} jugador
+ * @param {number} [maximoMvp] - Resultado de `calcularMaximoMvp`.
+ */
+export function medallaBalonDeOro(jugador, maximoMvp) {
+  const mvp = Number(jugador?.mvp) || 0
+  if (!maximoMvp || mvp <= 0 || Math.abs(mvp - maximoMvp) > 1e-6) return null
+  const mvpTexto = Number.isInteger(mvp) ? String(mvp) : mvp.toFixed(2)
+  return {
+    id: 'balon-de-oro',
+    tipo: 'balon-de-oro',
+    material: 'oro',
+    simbolo: 'balon',
+    nombre: 'Balón de oro',
+    descripcion: `Balón de oro · el que más veces fue MVP (${mvpTexto})`,
+  }
+}
+
+/**
  * Todas las medallas automáticas del jugador, de mayor a menor prestigio.
  * @param {Object} jugador
- * @param {{ puestosGoleador?: Map<string, number> }} [contexto] - Datos de toda la organización.
+ * @param {{ puestosGoleador?: Map<string, number>, maximoMvp?: number }} [contexto] - Datos de toda la organización.
  */
 export function medallasAutomaticas(jugador, contexto = {}) {
   return [
+    medallaBalonDeOro(jugador, contexto.maximoMvp),
     medallaGoleador(jugador, contexto.puestosGoleador),
     medallaGoles(jugador),
     medallaPartidos(jugador),
