@@ -53,6 +53,7 @@ Cada documento tiene estos campos (y opcionalmente **organizacionId** y **userId
 | fechaNacimiento | string | Fecha de nacimiento (YYYY-MM-DD). El usuario la edita en configuración. |
 | equipoFavorito | string | `"rojo"` o `"azul"`. El usuario lo elige en configuración. |
 | mvp            | number | 0 — cantidad de veces elegido MVP del partido (puede ser fracción si hay empate en votos). |
+| medallas       | array  | [] — medallas por hitos, ej. `[{ id: "goles-50", nombre: "50 goles", icono: "⚽", descripcion: "Llegó a 50 goles" }]`. Se muestran en la tarjeta del jugador. |
 
 La **edad** no se guarda en la base: se calcula al leer a partir de `fechaNacimiento` y se muestra en la interfaz solo como número.
 

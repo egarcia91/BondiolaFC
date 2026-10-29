@@ -49,6 +49,19 @@
   --secondary-color: #ef4444;
 }
 
+/* Cinta de las medallas: color del equipo favorito de quien mira (azul por defecto). */
+:root {
+  --medalla-cinta: #2563eb;
+  --medalla-cinta-oscura: #1d4ed8;
+  --medalla-cinta-brillo: #93c5fd;
+}
+
+[data-equipo="rojo"] {
+  --medalla-cinta: #dc2626;
+  --medalla-cinta-oscura: #b91c1c;
+  --medalla-cinta-brillo: #fca5a5;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',

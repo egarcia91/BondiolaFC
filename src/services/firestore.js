@@ -95,6 +95,7 @@ export async function getJugadores(organizacionId = null) {
       ...rest,
       elo,
       mvp,
+      medallas: Array.isArray(data.medallas) ? data.medallas : [],
       admin: data.admin === true,
       años: añosCalculados ?? 0,
     }
