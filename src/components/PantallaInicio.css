@@ -68,22 +68,6 @@
   border: 1px solid var(--border-color);
 }
 
-.pantalla-inicio-panel-title {
-  font-size: 0.8rem;
-  font-weight: 800;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin: 0 0 0.5rem;
-}
-
-.pantalla-inicio-panel-hint {
-  margin: 0 0 1rem;
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  line-height: 1.35;
-}
-
 .pantalla-inicio-loading,
 .pantalla-inicio-empty,
 .pantalla-inicio-hint {

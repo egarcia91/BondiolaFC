@@ -101,17 +101,7 @@ export default function PantallaInicio({
           )}
         </header>
 
-        <section className="pantalla-inicio-panel" aria-labelledby="pantalla-inicio-org-heading">
-          <h2 id="pantalla-inicio-org-heading" className="pantalla-inicio-panel-title">
-            Organizaciones
-          </h2>
-          {!loading && !error && filas.length > 0 && (
-            <p className="pantalla-inicio-panel-hint">
-              {modoConSesion
-                ? 'Hacé clic en una organización para abrirla con tu cuenta.'
-                : 'Hacé clic en una organización para verla como invitado.'}
-            </p>
-          )}
+        <section className="pantalla-inicio-panel" aria-label="Organizaciones">
           {!isFirebaseConfigured && (
             <p className="pantalla-inicio-hint">Configurá Firebase para ver el listado.</p>
           )}
