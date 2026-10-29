@@ -459,6 +459,14 @@
   line-height: 1.2;
 }
 
+.jugador-orden-num {
+  display: inline-block;
+  margin-right: 0.4rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
 .jugador-nombre {
   font-size: 0.9rem;
   font-weight: 400;
@@ -967,6 +975,11 @@
     font-size: 1.05rem;
     color: var(--text-primary);
     flex: 1;
+  }
+
+  .jugador-list-apodo .jugador-orden-num {
+    min-width: 1.6rem;
+    margin-right: 0.25rem;
   }
 
   .jugador-list-partidos {

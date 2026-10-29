@@ -30,17 +30,17 @@ const ORDEN_PROMEDIO_KEYS = new Set([
 
 const PROMEDIO_MOVIL_LABEL = {
   goles_partido: ' goles/part.',
-  victorias_partido: ' vic./part.',
-  empates_partido: ' emp./part.',
-  derrotas_partido: ' der./part.',
+  victorias_partido: ' victorias',
+  empates_partido: ' empates',
+  derrotas_partido: ' derrotas',
 }
 
 /** Etiquetas largas para la tarjeta en escritorio (métrica destacada por orden). */
 const RATIO_DESKTOP_LABEL = {
   goles_partido: 'Goles por partido',
-  victorias_partido: 'Victorias por partido',
-  empates_partido: 'Empates por partido',
-  derrotas_partido: 'Derrotas por partido',
+  victorias_partido: '% de victorias',
+  empates_partido: '% de empates',
+  derrotas_partido: '% de derrotas',
 }
 
 /** Totales V / D / E para mostrar en tarjetas y detalle móvil. */
@@ -73,6 +73,13 @@ function formatMovilDosDecimales(value) {
   const x = Number(value)
   if (!Number.isFinite(x)) return '0.00'
   return (Math.round(x * 100) / 100).toFixed(2)
+}
+
+/** Valor mostrado al ordenar por promedio: goles con 2 decimales; victorias/empates/derrotas como porcentaje entero. */
+function formatValorOrdenPromedio(jugador, tipo) {
+  const x = ratioPorPartido(jugador, tipo)
+  if (tipo === 'goles_partido') return formatMovilDosDecimales(x)
+  return `${Math.round(x * 100)}%`
 }
 
 function accentClassForMetric(clave) {
@@ -123,7 +130,8 @@ const COMPARAR_METRICAS = [
 function etiquetaCompararCentro(labelBase, key, porPartido) {
   const conModo = key === 'partidos' || Boolean(COMPARAR_RATIO_TIPO[key])
   if (!conModo) return labelBase
-  return `${labelBase}${porPartido ? ' (%)' : ' (n°)'}`
+  if (!porPartido) return `${labelBase} (n°)`
+  return `${labelBase}${key === 'goles' ? ' (prom.)' : ' (%)'}`
 }
 
 function formatMvpComparar(m) {
@@ -135,13 +143,17 @@ function formatMvpComparar(m) {
 function textoMetricaComparar(key, val, valorEsRatio = false) {
   if (val == null) return '—'
   if (key === 'mvp') return formatMvpComparar(val)
-  if (valorEsRatio && COMPARAR_RATIO_TIPO[key]) return formatMovilDosDecimales(val)
+  if (valorEsRatio && COMPARAR_RATIO_TIPO[key]) {
+    return key === 'goles' ? formatMovilDosDecimales(val) : `${Math.round(Number(val) * 100)}%`
+  }
   return String(val)
 }
 
-function formatoDeltaComparar(delta, esRatio) {
+function formatoDeltaComparar(delta, esRatio, key) {
   const d = Math.abs(delta)
-  return esRatio ? (Math.round(d * 100) / 100).toFixed(2) : String(Math.round(d))
+  if (!esRatio) return String(Math.round(d))
+  // Victorias/derrotas/empates por partido se muestran en puntos porcentuales; goles con 2 decimales.
+  return key === 'goles' ? (Math.round(d * 100) / 100).toFixed(2) : `${Math.round(d * 100)}%`
 }
 
 /**
@@ -165,7 +177,7 @@ function diffCompararFavor(key, valSelf, valOtro, valorEsRatio = false) {
     const body = dec ? rounded.toFixed(2) : String(Math.round(rounded))
     return `+${body}`
   }
-  return `+${formatoDeltaComparar(delta, valorEsRatio)}`
+  return `+${formatoDeltaComparar(delta, valorEsRatio, key)}`
 }
 
 /**
@@ -179,7 +191,7 @@ function diffCompararDerrotasPeor(valSelf, valOtro, valorEsRatio = false) {
   const peor = valorEsRatio ? a > b + 1e-6 : a > b
   if (!peor) return null
   const delta = a - b
-  return `-${formatoDeltaComparar(delta, valorEsRatio)}`
+  return `-${formatoDeltaComparar(delta, valorEsRatio, 'derrotas')}`
 }
 
 function IconoEloGrafico() {
@@ -933,11 +945,14 @@ function Jugadores({ organizacionId, isAdmin }) {
         <>
           {/* Vista desktop: grilla de tarjetas */}
           <div className="jugadores-grid">
-            {jugadoresFiltradosYOrdenados.map((jugador) => (
+            {jugadoresFiltradosYOrdenados.map((jugador, idx) => (
               <div key={jugador.id} className="jugador-card">
                 <div className="jugador-header">
                   <div className="jugador-titulo">
-                    <h3 className="jugador-apodo">{jugador.apodo || jugador.nombre}</h3>
+                    <h3 className="jugador-apodo">
+                      <span className="jugador-orden-num">{idx + 1}.</span>
+                      {jugador.apodo || jugador.nombre}
+                    </h3>
                     {jugador.apodo && <span className="jugador-nombre">{jugador.nombre}</span>}
                   </div>
                   <div className="jugador-header-derecha">
@@ -1035,7 +1050,7 @@ function Jugadores({ organizacionId, isAdmin }) {
                     <div className={statDesktopClass(ordenPor)}>
                       <span className="stat-label">{RATIO_DESKTOP_LABEL[ordenPor]}</span>
                       <span className="stat-value stat-value--ratio">
-                        {formatMovilDosDecimales(ratioPorPartido(jugador, ordenPor))}
+                        {formatValorOrdenPromedio(jugador, ordenPor)}
                       </span>
                     </div>
                   )}
@@ -1054,7 +1069,7 @@ function Jugadores({ organizacionId, isAdmin }) {
 
           {/* Vista móvil: listado compacto expandible */}
           <div className="jugadores-list-mobile">
-            {jugadoresFiltradosYOrdenados.map((jugador) => (
+            {jugadoresFiltradosYOrdenados.map((jugador, idx) => (
               <div
                 key={jugador.id}
                 className={`jugador-list-item ${expandidoId === jugador.id ? 'expandido' : ''}`}
@@ -1072,7 +1087,10 @@ function Jugadores({ organizacionId, isAdmin }) {
                     onClick={() => setExpandidoId((id) => (id === jugador.id ? null : jugador.id))}
                     aria-expanded={expandidoId === jugador.id}
                   >
-                    <span className="jugador-list-apodo">{jugador.apodo || jugador.nombre}</span>
+                    <span className="jugador-list-apodo">
+                      <span className="jugador-orden-num">{idx + 1}.</span>
+                      {jugador.apodo || jugador.nombre}
+                    </span>
                     {ordenPor !== 'ranking' && (
                       <span
                         className={
@@ -1108,7 +1126,7 @@ function Jugadores({ organizacionId, isAdmin }) {
                         ) : ORDEN_PROMEDIO_KEYS.has(ordenPor) ? (
                           <>
                             <span className="jugador-list-prom-num">
-                              {formatMovilDosDecimales(ratioPorPartido(jugador, ordenPor))}
+                              {formatValorOrdenPromedio(jugador, ordenPor)}
                             </span>
                             <span className="jugador-list-prom-lbl">{PROMEDIO_MOVIL_LABEL[ordenPor]}</span>
                           </>
