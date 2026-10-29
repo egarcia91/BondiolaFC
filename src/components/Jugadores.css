@@ -1032,6 +1032,22 @@
     flex: 1;
   }
 
+  .jugador-list-medallas {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    margin-left: 0.45rem;
+    vertical-align: -0.4rem;
+  }
+
+  .jugador-list-medallas .jugador-medalla-svg {
+    margin: 0;
+  }
+
+  .jugador-list-medallas .jugador-medalla-icono {
+    font-size: 0.95rem;
+  }
+
   .jugador-list-apodo .jugador-orden-num {
     min-width: 1.6rem;
     margin-right: 0.25rem;

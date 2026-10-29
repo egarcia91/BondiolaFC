@@ -204,11 +204,38 @@ function diffCompararDerrotasPeor(valSelf, valOtro, valorEsRatio = false) {
  * asignadas a mano en Firestore (`jugador.medallas`: [{ id, nombre, icono, descripcion? }]).
  * Si no tiene ninguna, el espacio queda vacío.
  */
-function JugadorMedallas({ jugador }) {
+function medallasDeJugador(jugador) {
   const manuales = Array.isArray(jugador.medallas)
     ? jugador.medallas.filter((m) => m && (m.nombre || m.icono))
     : []
-  const lista = [...medallasAutomaticas(jugador), ...manuales]
+  return [...medallasAutomaticas(jugador), ...manuales]
+}
+
+/** Dibujo de una medalla: SVG para las automáticas, emoji para las asignadas a mano. */
+function MedallaDibujo({ medalla, size }) {
+  return medalla.material ? (
+    <MedallaIcono material={medalla.material} numero={medalla.umbral} size={size} className="jugador-medalla-svg" />
+  ) : (
+    <span className="jugador-medalla-icono" aria-hidden="true">{medalla.icono || '🏅'}</span>
+  )
+}
+
+/** Solo los dibujos de las medallas, para acompañar el nombre en la lista compacta. */
+function JugadorMedallasIconos({ jugador }) {
+  const lista = medallasDeJugador(jugador)
+  if (lista.length === 0) return null
+  const texto = `Medallas: ${lista.map((m) => m.nombre).join(', ')}`
+  return (
+    <span className="jugador-list-medallas" role="img" aria-label={texto} title={texto}>
+      {lista.map((m, i) => (
+        <MedallaDibujo key={m.id ?? i} medalla={m} size={18} />
+      ))}
+    </span>
+  )
+}
+
+function JugadorMedallas({ jugador }) {
+  const lista = medallasDeJugador(jugador)
   return (
     <div className="jugador-medallas">
       <span className="stat-label">Medallas</span>
@@ -219,11 +246,7 @@ function JugadorMedallas({ jugador }) {
             className="jugador-medalla"
             title={m.descripcion ? (m.tipo ? m.descripcion : `${m.nombre}: ${m.descripcion}`) : m.nombre}
           >
-            {m.material ? (
-              <MedallaIcono material={m.material} numero={m.umbral} size={30} className="jugador-medalla-svg" />
-            ) : (
-              <span className="jugador-medalla-icono" aria-hidden="true">{m.icono || '🏅'}</span>
-            )}
+            <MedallaDibujo medalla={m} size={30} />
             {m.nombre && <span className="jugador-medalla-nombre">{m.nombre}</span>}
           </li>
         ))}
@@ -1072,6 +1095,7 @@ function Jugadores({ organizacionId, isAdmin }) {
                     <span className="jugador-list-apodo">
                       {mostrarNumeroPuesto && <span className="jugador-orden-num">{idx + 1}.</span>}
                       {jugador.apodo || jugador.nombre}
+                      <JugadorMedallasIconos jugador={jugador} />
                     </span>
                     {ordenPor !== 'ranking' && (
                       <span
