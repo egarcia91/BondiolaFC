@@ -222,6 +222,21 @@
   min-width: 0;
 }
 
+.jugadores-comparar-medallas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.jugadores-comparar-medallas--izq {
+  justify-content: flex-end;
+}
+
+.jugadores-comparar-medallas .jugador-medalla-svg {
+  margin: 0;
+}
+
 .jugadores-comparar-row--cabeceras {
   margin-bottom: 0.35rem;
   align-items: stretch;

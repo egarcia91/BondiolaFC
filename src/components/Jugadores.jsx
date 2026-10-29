@@ -228,14 +228,14 @@ function MedallaDibujo({ medalla, size }) {
 }
 
 /** Solo los dibujos de las medallas, para acompañar el nombre en la lista compacta. */
-function JugadorMedallasIconos({ jugador, contexto }) {
+function JugadorMedallasIconos({ jugador, contexto, size = 18, className = 'jugador-list-medallas' }) {
   const lista = medallasDeJugador(jugador, contexto)
   if (lista.length === 0) return null
   const texto = `Medallas: ${lista.map((m) => m.nombre).join(', ')}`
   return (
-    <span className="jugador-list-medallas" role="img" aria-label={texto} title={texto}>
+    <span className={className} role="img" aria-label={texto} title={texto}>
       {lista.map((m, i) => (
-        <MedallaDibujo key={m.id ?? i} medalla={m} size={18} />
+        <MedallaDibujo key={m.id ?? i} medalla={m} size={size} />
       ))}
     </span>
   )
@@ -937,6 +937,31 @@ function Jugadores({ organizacionId, isAdmin }) {
                     </div>
                   )
                 })}
+                <div className="jugadores-comparar-row jugadores-comparar-row--metrica">
+                  {[jugadorCompararA, null, jugadorCompararB].map((jugador, i) =>
+                    i === 1 ? (
+                      <div key="etiqueta" className="jugadores-comparar-celda jugadores-comparar-celda--etiqueta">
+                        Medallas
+                      </div>
+                    ) : (
+                      <div
+                        key={i === 0 ? 'izq' : 'der'}
+                        className={`jugadores-comparar-celda jugadores-comparar-celda--valor jugadores-comparar-celda--${i === 0 ? 'izq' : 'der'}`}
+                      >
+                        {jugador && medallasDeJugador(jugador, contextoMedallas).length > 0 ? (
+                          <JugadorMedallasIconos
+                            jugador={jugador}
+                            contexto={contextoMedallas}
+                            size={24}
+                            className={`jugadores-comparar-medallas jugadores-comparar-medallas--${i === 0 ? 'izq' : 'der'}`}
+                          />
+                        ) : (
+                          <span className="jugadores-comparar-valor-num">—</span>
+                        )}
+                      </div>
+                    )
+                  )}
+                </div>
               </div>
               {jugadorCompararA && jugadorCompararB && (
                 <JugadorEloComparacionChart
