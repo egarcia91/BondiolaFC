@@ -20,6 +20,9 @@ const ORDENES_EXIGEN_MIN_PARTIDOS = new Set([
 ])
 const MIN_PARTIDOS_ORDEN_EXIGENTE = 10
 
+/** Órdenes donde el número de puesto no aporta (no son un ranking). */
+const ORDENES_SIN_NUMERO_PUESTO = new Set(['presentes', 'ninguno'])
+
 /** Órdenes por promedio (goles, victorias, empates, derrotas sobre partidos jugados). */
 const ORDEN_PROMEDIO_KEYS = new Set([
   'goles_partido',
@@ -547,6 +550,8 @@ function Jugadores({ organizacionId, isAdmin }) {
   }
 
 
+  const mostrarNumeroPuesto = !ORDENES_SIN_NUMERO_PUESTO.has(ordenPor)
+
   /** Tarjeta de un lado de la comparación: el nombre es el selector de jugador. */
   const renderCompararMiniCard = (lado) => {
     const esA = lado === 'a'
@@ -891,7 +896,7 @@ function Jugadores({ organizacionId, isAdmin }) {
                 <div className="jugador-header">
                   <div className="jugador-titulo">
                     <h3 className="jugador-apodo">
-                      <span className="jugador-orden-num">{idx + 1}.</span>
+                      {mostrarNumeroPuesto && <span className="jugador-orden-num">{idx + 1}.</span>}
                       {jugador.apodo || jugador.nombre}
                     </h3>
                     {jugador.apodo && <span className="jugador-nombre">{jugador.nombre}</span>}
@@ -1029,7 +1034,7 @@ function Jugadores({ organizacionId, isAdmin }) {
                     aria-expanded={expandidoId === jugador.id}
                   >
                     <span className="jugador-list-apodo">
-                      <span className="jugador-orden-num">{idx + 1}.</span>
+                      {mostrarNumeroPuesto && <span className="jugador-orden-num">{idx + 1}.</span>}
                       {jugador.apodo || jugador.nombre}
                     </span>
                     {ordenPor !== 'ranking' && (
