@@ -75,7 +75,7 @@ function NumeroMedalla({ numero, m }) {
 
 /**
  * Medalla por hitos: mismo diseño para todas, cambian el material y el símbolo central
- * (`cancha` = partidos, `pelota` = goles, `laureles` = ranking de goleadores).
+ * (`cancha` = partidos, `pelota` = goles, `laureles` = ranking de goleadores, `racha` = partidos seguidos).
  * La cinta toma el color del equipo favorito de quien mira (variables `--medalla-cinta*`).
  */
 export default function MedallaIcono({ material = 'bronce', simbolo = 'cancha', numero, size = 22, className = '' }) {
@@ -124,6 +124,16 @@ export default function MedallaIcono({ material = 'bronce', simbolo = 'cancha', 
       {simbolo === 'pelota' && (
         <>
           <Pelota cx={60} cy={72} r={10} m={m} />
+          {numero != null && <NumeroMedalla numero={numero} m={m} />}
+        </>
+      )}
+      {simbolo === 'racha' && (
+        <>
+          <path
+            d="M60 52c3 7 11 10 11 20a11 11 0 0 1-22 0c0-5 3-8 5-10 0 4 2 6 4 6-2-6 0-12 2-16z"
+            fill={m.sombra}
+          />
+          <path d="M60 70c2 3 5 4 5 8a5 5 0 0 1-10 0c0-2 2-4 3-5 0 2 1 3 2 3-1-2 0-4 0-6z" fill={m.brillo} />
           {numero != null && <NumeroMedalla numero={numero} m={m} />}
         </>
       )}

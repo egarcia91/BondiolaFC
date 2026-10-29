@@ -6,7 +6,13 @@ import AdminEliminarJugadorModal from './AdminEliminarJugadorModal'
 import JugadorEloChart from './JugadorEloChart'
 import JugadorEloComparacionChart from './JugadorEloComparacionChart'
 import MedallaIcono from './MedallaIcono'
-import { medallasAutomaticas, calcularPuestosGoleador, calcularMaximoMvp, mejorMedalla } from '../constants/medallas'
+import {
+  medallasAutomaticas,
+  calcularPuestosGoleador,
+  calcularMaximoMvp,
+  calcularRachasPartidos,
+  mejorMedalla,
+} from '../constants/medallas'
 import { serieEloParaGrafico } from '../utils/eloSerie'
 import './Jugadores.css'
 
@@ -484,10 +490,14 @@ function Jugadores({ organizacionId, isAdmin }) {
     })
   }, [modoVista, compararListaKey])
 
-  /** Los rankings (goleadores, balón de oro) se calculan sobre toda la organización, no sobre la lista filtrada. */
+  /** Los rankings (goleadores, balón de oro, racha) se calculan sobre toda la organización, no sobre la lista filtrada. */
   const contextoMedallas = useMemo(
-    () => ({ puestosGoleador: calcularPuestosGoleador(jugadores), maximoMvp: calcularMaximoMvp(jugadores) }),
-    [jugadores]
+    () => ({
+      puestosGoleador: calcularPuestosGoleador(jugadores),
+      maximoMvp: calcularMaximoMvp(jugadores),
+      rachasPartidos: calcularRachasPartidos(partidosNormalized),
+    }),
+    [jugadores, partidosNormalized]
   )
 
   const jugadoresFiltradosYOrdenados = useMemo(() => {

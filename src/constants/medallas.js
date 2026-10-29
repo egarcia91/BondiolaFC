@@ -143,14 +143,81 @@ export function medallaBalonDeOro(jugador, maximoMvp) {
   }
 }
 
+function fechaPartido(p) {
+  const [y, m, d] = String(p?.fecha ?? '').split('-').map(Number)
+  if (!y || !m || !d) return null
+  const [h = 0, min = 0] = String(p?.hora || '00:00').split(':').map(Number)
+  return new Date(y, m - 1, d, h, min)
+}
+
+/** Un partido cuenta si se marcó como concluido o si su fecha ya pasó (y no está marcado como no concluido). */
+function partidoYaJugado(p, ahora) {
+  if (p?.concluido === true) return true
+  if (p?.concluido === false) return false
+  const f = fechaPartido(p)
+  return f != null && f <= ahora
+}
+
+/**
+ * Racha más larga de partidos seguidos jugados por cada jugador (sin faltar a ninguno
+ * de los partidos de la organización entre medio).
+ * @param {Array} partidos - Partidos normalizados (con `{ id }` en las listas de jugadores), en cualquier orden.
+ * @returns {{ rachas: Map<string, number>, maximo: number }}
+ */
+export function calcularRachasPartidos(partidos, ahora = new Date()) {
+  const jugados = (partidos ?? [])
+    .filter((p) => partidoYaJugado(p, ahora))
+    .sort((a, b) => (fechaPartido(a) ?? 0) - (fechaPartido(b) ?? 0))
+  const actual = new Map()
+  const rachas = new Map()
+  for (const p of jugados) {
+    const presentes = new Set(
+      [...(p.equipoLocal?.jugadores ?? []), ...(p.equipoVisitante?.jugadores ?? [])]
+        .map((e) => e?.id)
+        .filter(Boolean)
+    )
+    for (const id of actual.keys()) {
+      if (!presentes.has(id)) actual.set(id, 0)
+    }
+    for (const id of presentes) {
+      const n = (actual.get(id) ?? 0) + 1
+      actual.set(id, n)
+      if (n > (rachas.get(id) ?? 0)) rachas.set(id, n)
+    }
+  }
+  return { rachas, maximo: Math.max(0, ...rachas.values()) }
+}
+
+/**
+ * Medalla única de oro para quien tiene la racha más larga de partidos seguidos.
+ * Si hay empate, la comparten.
+ * @param {{ id: string }} jugador
+ * @param {{ rachas: Map<string, number>, maximo: number }} [rachasPartidos] - Resultado de `calcularRachasPartidos`.
+ */
+export function medallaRacha(jugador, rachasPartidos) {
+  const maximo = rachasPartidos?.maximo ?? 0
+  const racha = rachasPartidos?.rachas?.get(jugador?.id) ?? 0
+  if (maximo < 2 || racha !== maximo) return null
+  return {
+    id: 'racha-partidos',
+    tipo: 'racha',
+    material: 'oro',
+    simbolo: 'racha',
+    umbral: racha,
+    nombre: 'Racha de partidos',
+    descripcion: `Medalla de oro · la racha más larga: ${racha} partidos seguidos`,
+  }
+}
+
 /**
  * Todas las medallas automáticas del jugador, de mayor a menor prestigio.
  * @param {Object} jugador
- * @param {{ puestosGoleador?: Map<string, number>, maximoMvp?: number }} [contexto] - Datos de toda la organización.
+ * @param {{ puestosGoleador?: Map<string, number>, maximoMvp?: number, rachasPartidos?: Object }} [contexto] - Datos de toda la organización.
  */
 export function medallasAutomaticas(jugador, contexto = {}) {
   return [
     medallaBalonDeOro(jugador, contexto.maximoMvp),
+    medallaRacha(jugador, contexto.rachasPartidos),
     medallaGoleador(jugador, contexto.puestosGoleador),
     medallaGoles(jugador),
     medallaPartidos(jugador),
