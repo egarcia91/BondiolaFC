@@ -546,6 +546,70 @@ function Jugadores({ organizacionId, isAdmin }) {
     refreshJugadores()
   }
 
+
+  /** Tarjeta de un lado de la comparación: el nombre es el selector de jugador. */
+  const renderCompararMiniCard = (lado) => {
+    const esA = lado === 'a'
+    const jugador = esA ? jugadorCompararA : jugadorCompararB
+    const idActual = esA ? compararIdA : compararIdB
+    const idOtro = esA ? compararIdB : compararIdA
+    const setId = esA ? setCompararIdA : setCompararIdB
+    const setOtro = esA ? setCompararIdB : setCompararIdA
+    return (
+      <div className="jugadores-comparar-celda jugadores-comparar-celda--jugador">
+        <div className="jugadores-comparar-mini-card">
+          <div className="jugadores-comparar-mini-titulo">
+            <select
+              className="jugador-apodo jugadores-comparar-selector"
+              value={idActual}
+              aria-label={esA ? 'Jugador de la izquierda' : 'Jugador de la derecha'}
+              onChange={(e) => {
+                const id = e.target.value
+                setId(id)
+                if (id && id === idOtro) setOtro('')
+              }}
+            >
+              <option value="">Elegir jugador…</option>
+              {jugadoresListaComparar.map((j) => (
+                <option key={j.id} value={j.id} disabled={j.id === idOtro}>
+                  {j.apodo || j.nombre}
+                </option>
+              ))}
+            </select>
+            {jugador?.apodo && <span className="jugador-nombre">{jugador.nombre}</span>}
+          </div>
+          {jugador && (
+            <div className="jugadores-comparar-mini-footer">
+              {isAdmin && (
+                <div className="jugador-header-acciones-admin">
+                  <button
+                    type="button"
+                    className="jugador-btn-editar-admin"
+                    onClick={() => abrirEditarJugadorAdmin(jugador)}
+                    aria-label={TITLE_EDITAR_JUGADOR_ADMIN}
+                    title={TITLE_EDITAR_JUGADOR_ADMIN}
+                  >
+                    <IconoLapizEditar />
+                  </button>
+                  <button
+                    type="button"
+                    className="jugador-btn-eliminar-admin"
+                    onClick={() => abrirEliminarJugadorAdmin(jugador)}
+                    aria-label={TITLE_ELIMINAR_JUGADOR_ADMIN}
+                    title={TITLE_ELIMINAR_JUGADOR_ADMIN}
+                  >
+                    <IconoBasuraEliminar />
+                  </button>
+                </div>
+              )}
+              <span className="jugador-posicion">{jugador.posicion}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="jugadores-container">
       <div className="jugadores-header">
@@ -652,50 +716,7 @@ function Jugadores({ organizacionId, isAdmin }) {
                 <option value="derrotas_partido">Derrotas por partido</option>
               </select>
             </div>
-          ) : (
-            <div className="jugadores-comparar-picks">
-              <div className="jugadores-comparar-pick">
-                <label htmlFor="comparar-jugador-a" className="controles-label">Jugador (izq.)</label>
-                <select
-                  id="comparar-jugador-a"
-                  value={compararIdA}
-                  className="controles-select controles-comparar-select"
-                  onChange={(e) => {
-                    const id = e.target.value
-                    setCompararIdA(id)
-                    if (id && id === compararIdB) setCompararIdB('')
-                  }}
-                >
-                  <option value="">Elegir jugador…</option>
-                  {jugadoresListaComparar.map((j) => (
-                    <option key={j.id} value={j.id} disabled={j.id === compararIdB}>
-                      {j.apodo || j.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="jugadores-comparar-pick">
-                <label htmlFor="comparar-jugador-b" className="controles-label">Jugador (der.)</label>
-                <select
-                  id="comparar-jugador-b"
-                  value={compararIdB}
-                  className="controles-select controles-comparar-select"
-                  onChange={(e) => {
-                    const id = e.target.value
-                    setCompararIdB(id)
-                    if (id && id === compararIdA) setCompararIdA('')
-                  }}
-                >
-                  <option value="">Elegir jugador…</option>
-                  {jugadoresListaComparar.map((j) => (
-                    <option key={j.id} value={j.id} disabled={j.id === compararIdA}>
-                      {j.apodo || j.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
+          ) : null}
           <div className="jugadores-filtro-posicion" ref={filtroPosicionRef}>
             <button
               type="button"
@@ -753,89 +774,9 @@ function Jugadores({ organizacionId, isAdmin }) {
             <>
               <div className="jugadores-comparar-grid">
                 <div className="jugadores-comparar-row jugadores-comparar-row--cabeceras">
-                  <div className="jugadores-comparar-celda jugadores-comparar-celda--jugador">
-                    <div className="jugadores-comparar-mini-card">
-                      {jugadorCompararA ? (
-                        <>
-                          <div className="jugadores-comparar-mini-titulo">
-                            <h3 className="jugador-apodo">{jugadorCompararA.apodo || jugadorCompararA.nombre}</h3>
-                            {jugadorCompararA.apodo && (
-                              <span className="jugador-nombre">{jugadorCompararA.nombre}</span>
-                            )}
-                          </div>
-                          <div className="jugadores-comparar-mini-footer">
-                            {isAdmin && (
-                              <div className="jugador-header-acciones-admin">
-                                <button
-                                  type="button"
-                                  className="jugador-btn-editar-admin"
-                                  onClick={() => abrirEditarJugadorAdmin(jugadorCompararA)}
-                                  aria-label={TITLE_EDITAR_JUGADOR_ADMIN}
-                                  title={TITLE_EDITAR_JUGADOR_ADMIN}
-                                >
-                                  <IconoLapizEditar />
-                                </button>
-                                <button
-                                  type="button"
-                                  className="jugador-btn-eliminar-admin"
-                                  onClick={() => abrirEliminarJugadorAdmin(jugadorCompararA)}
-                                  aria-label={TITLE_ELIMINAR_JUGADOR_ADMIN}
-                                  title={TITLE_ELIMINAR_JUGADOR_ADMIN}
-                                >
-                                  <IconoBasuraEliminar />
-                                </button>
-                              </div>
-                            )}
-                            <span className="jugador-posicion">{jugadorCompararA.posicion}</span>
-                          </div>
-                        </>
-                      ) : (
-                        <p className="jugadores-comparar-placeholder">Elegí jugador (izq.)</p>
-                      )}
-                    </div>
-                  </div>
+                  {renderCompararMiniCard('a')}
                   <div className="jugadores-comparar-celda jugadores-comparar-celda--centro" aria-hidden="true" />
-                  <div className="jugadores-comparar-celda jugadores-comparar-celda--jugador">
-                    <div className="jugadores-comparar-mini-card">
-                      {jugadorCompararB ? (
-                        <>
-                          <div className="jugadores-comparar-mini-titulo">
-                            <h3 className="jugador-apodo">{jugadorCompararB.apodo || jugadorCompararB.nombre}</h3>
-                            {jugadorCompararB.apodo && (
-                              <span className="jugador-nombre">{jugadorCompararB.nombre}</span>
-                            )}
-                          </div>
-                          <div className="jugadores-comparar-mini-footer">
-                            {isAdmin && (
-                              <div className="jugador-header-acciones-admin">
-                                <button
-                                  type="button"
-                                  className="jugador-btn-editar-admin"
-                                  onClick={() => abrirEditarJugadorAdmin(jugadorCompararB)}
-                                  aria-label={TITLE_EDITAR_JUGADOR_ADMIN}
-                                  title={TITLE_EDITAR_JUGADOR_ADMIN}
-                                >
-                                  <IconoLapizEditar />
-                                </button>
-                                <button
-                                  type="button"
-                                  className="jugador-btn-eliminar-admin"
-                                  onClick={() => abrirEliminarJugadorAdmin(jugadorCompararB)}
-                                  aria-label={TITLE_ELIMINAR_JUGADOR_ADMIN}
-                                  title={TITLE_ELIMINAR_JUGADOR_ADMIN}
-                                >
-                                  <IconoBasuraEliminar />
-                                </button>
-                              </div>
-                            )}
-                            <span className="jugador-posicion">{jugadorCompararB.posicion}</span>
-                          </div>
-                        </>
-                      ) : (
-                        <p className="jugadores-comparar-placeholder">Elegí jugador (der.)</p>
-                      )}
-                    </div>
-                  </div>
+                  {renderCompararMiniCard('b')}
                 </div>
                 {COMPARAR_METRICAS.map(({ key, label: labelBase, get }) => {
                   const valorEsRatio = compararPorPartido && Boolean(COMPARAR_RATIO_TIPO[key])
