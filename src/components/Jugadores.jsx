@@ -6,7 +6,7 @@ import AdminEliminarJugadorModal from './AdminEliminarJugadorModal'
 import JugadorEloChart from './JugadorEloChart'
 import JugadorEloComparacionChart from './JugadorEloComparacionChart'
 import MedallaIcono from './MedallaIcono'
-import { medallasAutomaticas, calcularPuestosGoleador, calcularMaximoMvp } from '../constants/medallas'
+import { medallasAutomaticas, calcularPuestosGoleador, calcularMaximoMvp, mejorMedalla } from '../constants/medallas'
 import { serieEloParaGrafico } from '../utils/eloSerie'
 import './Jugadores.css'
 
@@ -227,16 +227,25 @@ function MedallaDibujo({ medalla, size }) {
   )
 }
 
-/** Solo los dibujos de las medallas, para acompañar el nombre en la lista compacta. */
-function JugadorMedallasIconos({ jugador, contexto, size = 18, className = 'jugador-list-medallas' }) {
+/**
+ * Solo los dibujos de las medallas. Con `compacto`, muestra únicamente la mejor y
+ * la cantidad total (ej. balón de oro x4), como los goles en los partidos.
+ */
+function JugadorMedallasIconos({ jugador, contexto, size = 18, className = 'jugador-list-medallas', compacto = false }) {
   const lista = medallasDeJugador(jugador, contexto)
   if (lista.length === 0) return null
   const texto = `Medallas: ${lista.map((m) => m.nombre).join(', ')}`
+  const mejor = compacto ? mejorMedalla(lista) : null
   return (
     <span className={className} role="img" aria-label={texto} title={texto}>
-      {lista.map((m, i) => (
-        <MedallaDibujo key={m.id ?? i} medalla={m} size={size} />
-      ))}
+      {compacto ? (
+        <>
+          <MedallaDibujo medalla={mejor} size={size} />
+          {lista.length > 1 && <span className="jugador-medallas-mult">x{lista.length}</span>}
+        </>
+      ) : (
+        lista.map((m, i) => <MedallaDibujo key={m.id ?? i} medalla={m} size={size} />)
+      )}
     </span>
   )
 }
@@ -1133,7 +1142,7 @@ function Jugadores({ organizacionId, isAdmin }) {
                     <span className="jugador-list-apodo">
                       {mostrarNumeroPuesto && <span className="jugador-orden-num">{idx + 1}.</span>}
                       {jugador.apodo || jugador.nombre}
-                      <JugadorMedallasIconos jugador={jugador} contexto={contextoMedallas} />
+                      <JugadorMedallasIconos jugador={jugador} contexto={contextoMedallas} compacto />
                     </span>
                     {ordenPor !== 'ranking' && (
                       <span

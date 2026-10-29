@@ -156,3 +156,17 @@ export function medallasAutomaticas(jugador, contexto = {}) {
     medallaPartidos(jugador),
   ].filter(Boolean)
 }
+
+/** Valor de cada material para elegir la mejor medalla (mayor = mejor). */
+const VALOR_MATERIAL = { oro: 4, plata: 3, bronce: 2, madera: 1 }
+
+/**
+ * La mejor medalla de una lista: primero el balón de oro, después por material
+ * (oro > plata > bronce > madera); a igual material gana la que aparece antes
+ * (goleador > goles > partidos). Las asignadas a mano sin material van al final.
+ * @param {Array<{ tipo?: string, material?: string }>} medallas
+ */
+export function mejorMedalla(medallas) {
+  const valor = (m) => (m.tipo === 'balon-de-oro' ? 10 : VALOR_MATERIAL[m.material] ?? 0)
+  return (medallas ?? []).reduce((mejor, m) => (!mejor || valor(m) > valor(mejor) ? m : mejor), null)
+}
